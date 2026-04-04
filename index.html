@@ -1342,7 +1342,10 @@ function cardKeydown(e, colId) { if (e.key === 'Enter' && !e.shiftKey) { e.preve
 
 function confirmAddCard(colId){
 
-  const inp=document.getElementById('inp-'+colId);const title=inp.value.trim();if(!title)cancelAddCard(colId);return;
+  const inp=document.getElementById('inp-'+colId);const title=inp.value.trim();if(!title){
+    cancelAddCard(colId);
+    return;
+  };
 
   state.columns.find(c=>c.id===colId).cards.push({id:`c${nextId++}`,title,done:false,checks:[],desc:''});
 
