@@ -28,7 +28,9 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-
+*:focus {
+    outline: none !important;
+}
 
 :root{
 
@@ -291,7 +293,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;pa
 
 .cards-wrap{flex:1;overflow-y:auto;padding:4px 8px 8px;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--col-border) transparent}
 
+.add-col-wrap {
+  right: 0;
+  margin-left: 8px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
 
+.add-col-wrap:hover {
+  opacity: 1;
+}
 
 .drop-zone {
 
@@ -470,7 +481,32 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;pa
 
 .col-input::placeholder{color:var(--text3)}
 
+.col-title[contenteditable="true"] {
+  outline: none !important; /* On enlève le contour moche par défaut */
+  box-shadow: 0 0 0 2px var(--accent); /* On crée un contour net de 2px */
+  background: rgba(255, 255, 255, 0.1); /* Un léger fond pour détacher la zone */
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-block;
+  min-width: 50px;
+}
 
+.col-title:focus, 
+.col-title[contenteditable="true"]:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: 0 0 0 2px var(--accent) !important; /* On met NOTRE contour propre */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.col-collapsed-view {
+  cursor: grab !important; /* Force le curseur "main" sur la vue réduite */
+}
+
+.col-collapsed-view:active {
+  cursor: grabbing !important; /* Curseur "main fermée" pendant le déplacement */
+}
 
 /* ── MODAL ── */
 
@@ -994,7 +1030,7 @@ function makeCol(col){
 
       <div class="col-title-wrap">
 
-        <div class="col-title">${esc(col.title)}</div>
+        <div class="col-title" id="title-${col.id}">${esc(col.title)}</div>
 
         <span class="col-count">${col.cards.length}</span>
 
@@ -1241,17 +1277,21 @@ function makeAddCol(){
 
 
 function initSortable() {
-
   const board = document.getElementById('board');
-
   new Sortable(board, {
-
-    animation: 200, handle: '.col-header, .col-collapsed-view', ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
-
-    filter: '.col-menu-btn, .col-collapse-btn, .add-col-wrap', preventOnFilter: false,
-
-    onEnd: function (evt) { if(evt.oldIndex === evt.newIndex) return; const movedCol = state.columns.splice(evt.oldIndex, 1)[0]; state.columns.splice(evt.newIndex, 0, movedCol); saveStateToFirebase(); }
-
+    animation: 200, 
+    handle: '.col-header, .col-collapsed-view', 
+    ghostClass: 'sortable-ghost', 
+    dragClass: 'sortable-drag',
+    // ON DIT À SORTABLE D'IGNORER LE BLOC D'AJOUT
+    filter: '.add-col-wrap,  .col-menu-btn, .col-collapse-btn', 
+    draggable: '.column', // On précise que SEULES les colonnes bougent
+    onEnd: function (evt) { 
+      if(evt.oldIndex === evt.newIndex) return; 
+      const movedCol = state.columns.splice(evt.oldIndex, 1)[0]; 
+      state.columns.splice(evt.newIndex, 0, movedCol); 
+      saveStateToFirebase(); 
+    }
   });
 
 
@@ -1417,7 +1457,47 @@ function hideCtx(){document.getElementById('ctxMenu').classList.remove('active')
 
 document.addEventListener('click', e => { hideCtx(); if (!e.target.closest('.bg-panel') && !e.target.closest('.bg-fab')) { document.getElementById('bgPanel')?.classList.remove('open'); } });
 
-function ctxRenameCol(){hideCtx();const c=state.columns.find(c=>c.id===ctxColId);if(!c)return;const n=prompt('Nouveau nom :',c.title);if(n?.trim()){c.title=n.trim();render();saveStateToFirebase();}}
+/* function ctxRenameCol(){hideCtx();const c=state.columns.find(c=>c.id===ctxColId);if(!c)return;const n=prompt('Nouveau nom :',c.title);if(n?.trim()){c.title=n.trim();render();saveStateToFirebase();}}
+ */
+function ctxRenameCol() {
+  hideCtx();
+  const titleEl = document.getElementById(`title-${ctxColId}`);
+  
+  if (titleEl) {
+    // On force le style pour effacer le "bleu" du navigateur
+    titleEl.style.outline = "none";
+    titleEl.style.border = "none";
+    titleEl.style.boxShadow = "0 0 0 2px var(--accent)"; // Un contour propre
+    titleEl.style.borderRadius = "4px";
+    titleEl.style.padding = "2px 6px";
+    titleEl.style.backgroundColor = "rgba(255,255,255,0.1)";
+    
+    titleEl.contentEditable = "true";
+    titleEl.focus();
+    
+    // Sélectionne tout le texte
+    const range = document.createRange();
+    range.selectNodeContents(titleEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    titleEl.onblur = function() {
+      titleEl.contentEditable = "false";
+      // On remet le style normal
+      titleEl.style.boxShadow = "none";
+      titleEl.style.backgroundColor = "transparent";
+      renameCol(ctxColId, titleEl.innerText);
+    };
+
+    titleEl.onkeydown = function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        titleEl.blur();
+      }
+    };
+  }
+}
 
 function ctxClearCol(){hideCtx();const c=state.columns.find(c=>c.id===ctxColId);if(c){c.cards=[];render();toast('Liste vidée');saveStateToFirebase();}}
 
