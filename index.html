@@ -77,13 +77,12 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--col-border);
+  padding: 12px 24px;
+  background: var(--bg2); /* Suppression du dégradé pour une couleur unie */
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid var(--col-border);
 }
 
 .branding-wrap {
@@ -109,6 +108,43 @@ header {
 .app-title-monkey { color: #f97316; } /* Orange */
 .app-title-board { color: #14b8a6; }  /* Teal */
 
+.title-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--col-border);
+}
+
+.project-bar { 
+  display: flex; 
+  align-items: center; 
+  justify-content: flex-start;
+  padding: 0 24px; 
+  background: #14b8a6; /* Un peu plus clair pour bien la voir */
+  border-bottom: 1px solid var(--col-border);
+  height: 60px;
+  position: relative; /* Pour s'assurer qu'elle suit le flux normal */
+  z-index: 10;
+}
+
+#boardTitleDisplay { 
+  font-size: 22px; 
+  font-weight: 700; 
+  color: #ffffff; /* On force le blanc pour être sûr de le voir */
+  cursor: text;
+  display: inline-block;
+  min-width: 50px;
+}
+
+#boardTitleDisplay:hover { background: rgba(255,255,255,0.05); }
+
+#boardTitleDisplay:focus {
+  background: #ffffff; /* Fond blanc pour bien voir le texte noir */
+  color: #000000 !important; /* Texte noir forcé */
+  box-shadow: 0 0 0 2px var(--accent); /* Optionnel: petit contour de couleur */
+}
+
 /* --- Force le NOIR sur tout le contenu des listes --- */
 .col-header, 
 .col-title, 
@@ -123,6 +159,8 @@ header {
 .add-card-btn svg {
   stroke: #000000 !important;
 }
+
+
 
 
 
@@ -804,7 +842,13 @@ header {
   </div>
 </header>
 
-
+<div class="project-bar">
+  <span id="boardTitleDisplay" 
+        contenteditable="true" 
+        onblur="updateBoardName(this)" 
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
+  </span>
+</div>
 
 <div class="board-wrap"><div class="board" id="board"></div></div>
 
@@ -886,6 +930,14 @@ let currentUser = null;
 
 let undoStack = []; // Historique des actions passées
 let redoStack = []; // Actions annulées qu'on peut rétablir
+
+const monkeyRaces = [
+  "Capucin", "Chimpanzé", "Gorille", "Macaque", "Ouistiti", "Babouin", "Gibbon", "Mandrill", "Lémurien", "Orang-outan",
+  "Bonobo", "Saimiri", "Hurleur", "Nasique", "Atèle", "Tamarin", "Marmoset", "Vervet", "Magot", "Cercopithèque",
+  "King Kong", "Cheeta", "Abu", "Donkey Kong", "Diddy Kong", "George le Petit Curieux", "Rafiki", "Caesar", "Maurice", "Rocket",
+  "Bad l'Héritier", "Grappe de Singe", "Goku", "Bubbles", "Lancelot Link", "Bingo", "Dunston", "Jack", "Mojo Jojo", "Specter",
+  "Singe de l'Espace", "Dr. Zaius", "Cornelius", "Zira", "Grod", "King Louie", "Curious George", "Ulysse", "Ape", "Koba"
+];
 
 
 
@@ -970,6 +1022,8 @@ async function loadDataFromFirebase() {
       // Applique le fond sauvegardé si existant
 
       if(state.bg) document.body.style.background = state.bg;
+
+      initBoardName();
 
     } else {
 
@@ -1100,18 +1154,18 @@ function toast(msg){const t=document.getElementById('toast');document.getElement
 
 
 
-function render(){
+function render() {
+  // Met à jour le texte dans la barre de projet dédiée (et non dans le header)
+  const titleEl = document.getElementById('boardTitleDisplay');
+  if (titleEl) titleEl.innerText = state.boardName;
 
-  const board=document.getElementById('board');
-
-  board.innerHTML='';
-
-  state.columns.forEach(col=>board.appendChild(makeCol(col)));
-
-  board.appendChild(makeAddCol());
-
+  document.body.style.background = state.bg || '#0f1117';
+  
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  state.columns.forEach(col => boardEl.appendChild(makeCol(col)));
+  boardEl.appendChild(makeAddCol());
   initSortable();
-
 }
 
 
@@ -1694,6 +1748,28 @@ function renderModal(card,col){
   setTimeout(() => autoResize(document.getElementById('modalTitleInput')), 0);
 
 }
+
+// Au chargement initial ou si le nom est vide
+function initBoardName() {
+  if (!state.boardName) {
+    const randomMonkey = monkeyRaces[Math.floor(Math.random() * monkeyRaces.length)];
+    state.boardName = "Projet " + randomMonkey;
+  }
+  document.getElementById('boardTitleDisplay').innerText = state.boardName;
+}
+
+function updateBoardName(el) {
+  const val = el.innerText.trim();
+  if (val && val !== state.boardName) {
+    pushHistory();
+    state.boardName = val;
+    saveStateToFirebase();
+  } else {
+    el.innerText = state.boardName;
+  }
+}
+
+// Appelle initBoardName() dans ta fonction loadDataFromFirebase après avoir reçu le state
 
 function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
 
