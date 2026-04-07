@@ -954,46 +954,41 @@ auth.onAuthStateChanged(user => {
 
 
 async function loadDataFromFirebase() {
+
   try {
+
     const docRef = db.collection('boards').doc(currentUser.uid);
+
     const docSnap = await docRef.get();
+
     
+
     if (docSnap.exists) {
-      let data = docSnap.data();
-      
-      // --- LOGIQUE DE MIGRATION ---
-      // Si "boards" n'existe pas, c'est que ce sont les anciennes données
-      if (!data.boards) {
-        console.log("Migration des données vers le format MonkeyBoard...");
-        state = {
-          activeBoardId: 'board-1',
-          boards: [
-            {
-              id: 'board-1',
-              name: 'Mon Tableau',
-              bg: data.bg || '#0f1117',
-              columns: data.columns || [] // On récupère tes colonnes actuelles ici
-            }
-          ]
-        };
-        // On sauvegarde tout de suite le nouveau format pour ne plus avoir l'erreur
-        await saveStateToFirebase();
-      } else {
-        state = data;
-      }
+
+      state = docSnap.data();
+
+      // Applique le fond sauvegardé si existant
+
+      if(state.bg) document.body.style.background = state.bg;
+
     } else {
-      // Nouvel utilisateur : on initialise un compte vide propre
-      state = {
-        activeBoardId: 'board-1',
-        boards: [{ id: 'board-1', name: 'Mon Tableau', bg: '#0f1117', columns: [] }]
-      };
+
+      // C'est un nouvel utilisateur, on sauvegarde l'état par défaut
+
       await saveStateToFirebase();
+
     }
+
     render();
+
   } catch (err) {
+
     console.error("Erreur de chargement", err);
+
     toast("Erreur de connexion à la base");
+
   }
+
 }
 
 
@@ -1105,22 +1100,18 @@ function toast(msg){const t=document.getElementById('toast');document.getElement
 
 
 
-function render() {
-  const currentBoard = getActiveBoard(); // On récupère le tableau sélectionné
-  
-  const board = document.getElementById('board');
-  if (!board) return;
-  board.innerHTML = '';
-  
-  // On applique le fond d'écran du tableau actuel
-  if (currentBoard.bg) document.body.style.background = currentBoard.bg;
+function render(){
 
-  // C'est ici que l'erreur se produisait : on pointe sur currentBoard.columns
-  currentBoard.columns.forEach(col => board.appendChild(makeCol(col)));
-  
+  const board=document.getElementById('board');
+
+  board.innerHTML='';
+
+  state.columns.forEach(col=>board.appendChild(makeCol(col)));
+
   board.appendChild(makeAddCol());
-  renderTabs(); // Affiche les onglets
+
   initSortable();
+
 }
 
 
@@ -1763,4 +1754,3 @@ initBgPicker();
 </body>
 
 </html>
-index.html
