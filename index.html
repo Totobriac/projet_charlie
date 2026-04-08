@@ -780,6 +780,38 @@ header {
   gap: 16px;
 }
 
+/* Conteneur du bas de la carte */
+.board-card-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column; /* On empile les stats et la date */
+    gap: 8px;
+}
+
+/* Ligne des statistiques */
+.board-card-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text2);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 8px;
+}
+
+.board-card-stats b {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Ligne de la date de modification */
+.board-card-date {
+    font-size: 11px;
+    color: var(--text3);
+    font-style: italic;
+    text-align: right;
+}
+
 .board-card {
   background: var(--bg2);
   border: 1px solid var(--col-border);
@@ -1286,9 +1318,27 @@ document.addEventListener('click', () => {
 
 // Observe les changements d'état (Connecté / Déconnecté)
 
-auth.onAuthStateChanged(user => {
+async function loadUserSettings() {
+  if (!currentUser) return;
+
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const data = doc.data();
+
+    if (data?.settings?.bg) {
+      document.body.style.background = data.settings.bg;
+    }
+  } catch (e) {
+    console.error("Erreur load bg", e);
+  }
+}
+
+auth.onAuthStateChanged(async(user) => {
   if (user) {
     currentUser = user;
+
+    await loadUserSettings();
+
     document.getElementById('login-screen').style.display = 'none';
     
     // MISE À JOUR DE LA PHOTO DE PROFIL
@@ -1314,6 +1364,16 @@ let boardsList = []; // [{id, name, description, updatedAt}]
 
 async function loadBoardsList() {
   try {
+
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    if (userDoc.exists) {
+      const data = userDoc.data();
+      if (data.settings && data.settings.bg) {
+        state.bg = data.settings.bg;
+        document.body.style.background = state.bg; // On applique le fond immédiatement
+      }
+    }
+
     const snap = await db.collection('users').doc(currentUser.uid)
       .collection('boards').orderBy('updatedAt', 'desc').get();
     
@@ -1351,33 +1411,69 @@ function showBoardsScreen(active) {
 
 function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
+  if (!grid) return;
   grid.innerHTML = '';
 
-  // Carte Nouveau
+  // 1. Bouton "Nouveau Tableau"
   const newCard = document.createElement('div');
   newCard.className = 'board-card board-card-new';
   newCard.innerHTML = `<div class="board-card-new-icon">+</div><span>Nouveau tableau</span>`;
   newCard.onclick = openNewBoardModal;
   grid.appendChild(newCard);
 
-  // Cartes Projets
-  boardsList.forEach(b => {
+  // 2. Vérification de la liste des projets
+  if (!boardsList || boardsList.length === 0) return;
+
+  // 3. Boucle de génération des cartes
+  boardsList.forEach(project => {
+    // Calcul local des statistiques pour CE projet
+    const cols = project.kanban?.columns || [];
+    const nbListes = cols.length;
+    let totalTaches = 0;
+    let finies = 0;
+
+    cols.forEach(c => {
+      const cards = c.cards || [];
+      totalTaches += cards.length;
+      
+      const t = c.title.toLowerCase();
+      if (t.includes('fini') || t.includes('terminé') || t.includes('done')) {
+        finies += cards.length;
+      }
+    });
+
+    // Formatage de la date locale
+    const dateTxt = project.updatedAt 
+      ? new Date(project.updatedAt).toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) 
+      : '---';
+
+    // Création de l'élément HTML
     const card = document.createElement('div');
     card.className = 'board-card';
     card.innerHTML = `
-      <div class="board-card-actions" style="position:absolute; top:12px; right:12px;">
-    <button class="board-opt-btn" onclick="openBoardCtx(event, '${b.id}')">···</button>
-  </div>
-      <div class="board-card-name">${esc(b.name)}</div>
-      <div class="board-card-desc">${esc(b.description || 'Aucune description')}</div>
-      <div class="board-card-meta">Modifié le ${new Date(b.updatedAt).toLocaleDateString()}</div>
+      <div class="board-card-actions">
+        <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
+      </div>
+      <div class="board-card-name">${esc(project.name)}</div>
+      <div class="board-card-desc">${esc(project.description || '')}</div>
+      
+      <div class="board-card-footer" style="margin-top:auto; padding-top:12px; display:flex; flex-direction:column; gap:8px; border-top:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text2);">
+          <span><b style="color:var(--accent)">${nbListes}</b> listes</span>
+          <span><b style="color:var(--accent)">${finies}/${totalTaches}</b> tâches</span>
+        </div>
+        <div style="font-size:10px; color:var(--text3); text-align:right; font-style:italic;">
+          Modifié le ${dateTxt}
+        </div>
+      </div>
     `;
-    card.onclick = (e) => { if(!e.target.closest('.board-card-actions')) openBoard(b.id); };
+
+    card.onclick = (e) => { 
+      if (!e.target.closest('.board-card-actions')) openBoard(project.id); 
+    };
     grid.appendChild(card);
   });
 }
-
-
 
 // Menu contextuel pour les cartes de l'accueil
 function openBoardCtx(e, boardId) {
@@ -1391,6 +1487,30 @@ function openBoardCtx(e, boardId) {
     <button class="ctx-item danger" onclick="confirmDeleteBoard('${b.id}')">🗑 Supprimer</button>
   `);
 }
+
+const dateModif = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric'
+}) : 'Inconnue';
+
+const card = document.createElement('div');
+card.className = 'board-card';
+card.innerHTML = `
+  <div class="board-card-actions">
+    <button class="board-opt-btn" onclick="openBoardCtx(event, '${b.id}')">···</button>
+  </div>
+  <div class="board-card-name">${esc(b.name)}</div>
+  <div class="board-card-desc">${esc(b.description || 'Aucune description')}</div>
+  
+  <div class="board-card-footer">
+    <div class="board-card-stats">
+      <span><b>${nbListes}</b> ${nbListes > 1 ? 'listes' : 'liste'}</span>
+      <span><b>${completedTasks}/${totalTasks}</b> tâches</span>
+    </div>
+    <div class="board-card-date">Modifié le ${dateModif}</div>
+  </div>
+`;
 
 // --- ACTIONS PROJETS ---
 
@@ -1507,6 +1627,24 @@ async function deleteBoard(e, boardId) {
   }
 }
 
+function toggleBgPanel() {
+  const panel = document.getElementById('bgPanel');
+  const isBoardsList = document.getElementById('boards-screen').classList.contains('active');
+
+  // Sécurité : on ne change le fond que sur l'accueil
+  if (!isBoardsList) {
+    toast("Le fond ne se change que sur l'accueil");
+    return;
+  }
+
+  if (panel) {
+    panel.classList.toggle('open');
+    // Ferme le menu profil quand on ouvre la palette
+    const drop = document.getElementById('profileDropdown');
+    if (drop) drop.classList.remove('active');
+  }
+}
+
 function executeEditDescBoard(id) {
   const newDesc = document.getElementById('editBoardDescInput').value.trim();
   
@@ -1553,6 +1691,7 @@ function goToBoardsList() {
     saveStateToFirebase();
   }
   showBoardsScreen(true);
+  loadUserSettings();
   renderBoardsGrid();
 }
 
@@ -2472,27 +2611,24 @@ function renderBpBody(){
 
 }
 
-function applyBg(value, type, el) {
-  pushHistory();
-  state.bg = value; // On stocke dans l'état local
-  document.body.style.background = value; // On applique immédiatement
-  saveStateToFirebase(); // On envoie à la base de données
-  
-  if (activeBpEl) activeBpEl.classList.remove('active');
-  if (el) { el.classList.add('active'); activeBpEl = el; }
-}
-function toggleBgPanel() {
-  const panel = document.getElementById('bgPanel');
-  const isBoardsList = document.getElementById('boards-screen').classList.contains('active');
+async function applyBg(value, type, el) {
+  document.body.style.background = value;
+  state.bg = value; // On le garde en mémoire locale
 
-  // Si on n'est pas sur l'accueil, on ne fait rien
-  if (!isBoardsList) {
-    toast("Le fond ne se change que sur l'accueil");
-    return;
+  if (!currentUser) return;
+
+  try {
+    // On enregistre dans un document "settings" pour l'utilisateur
+    await db.collection('users').doc(currentUser.uid).set({
+      settings: { bg: value }
+    }, { merge: true });
+  } catch (e) {
+    console.error("Erreur sauvegarde background:", e);
   }
 
-  panel.classList.toggle('open');
-  document.getElementById('profileDropdown').classList.remove('active');
+  // Gestion visuelle de la sélection dans la palette
+  if (activeBpEl) activeBpEl.classList.remove('active');
+  if (el) { el.classList.add('active'); activeBpEl = el; }
 }
 
 
