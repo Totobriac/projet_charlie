@@ -725,6 +725,221 @@ header {
 
 ::-webkit-scrollbar-thumb{background:var(--col-border);border-radius:10px}
 
+/* ── BOARDS LIST SCREEN ── */
+#boards-screen {
+  display: none;
+  min-height: calc(100vh - 57px);
+  padding: 40px 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+#boards-screen.active { display: block; }
+
+.boards-screen-title {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.boards-screen-sub {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 32px;
+}
+
+.boards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.board-card {
+  background: var(--bg2);
+  border: 1px solid var(--col-border);
+  border-radius: 14px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.board-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+.board-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.board-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.board-card-desc {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 36px;
+}
+.board-card-meta {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.board-card-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.board-card:hover .board-card-actions { opacity: 1; }
+.board-card-del {
+  width: 28px; height: 28px;
+  background: var(--bg3);
+  border: none; border-radius: 7px;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.board-card-del:hover { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* Carte "nouveau tableau" */
+.board-card-new {
+  background: transparent;
+  border: 1.5px dashed var(--col-border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  min-height: 140px;
+  color: var(--text3);
+  font-size: 14px;
+  font-weight: 500;
+}
+.board-card-new::before { display: none; }
+.board-card-new:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,111,255,0.04); }
+.board-card-new-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  transition: background 0.15s;
+}
+.board-card-new:hover .board-card-new-icon { background: rgba(108,111,255,0.15); }
+
+/* Modal création tableau */
+.new-board-modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 500;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.new-board-modal-overlay.active { display: flex; }
+.new-board-modal {
+  background: var(--bg2);
+  border: 1px solid var(--col-border);
+  border-radius: 16px;
+  width: 480px;
+  max-width: 95vw;
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+.new-board-modal h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px; font-weight: 600;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+.nb-monkey-preview {
+  background: var(--bg3);
+  border: 1px solid var(--col-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.nb-monkey-badge {
+  font-size: 24px;
+}
+.nb-monkey-info { flex: 1; }
+.nb-monkey-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+.nb-monkey-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.nb-form-label {
+  font-size: 11px; font-weight: 500; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 8px; display: block;
+}
+.nb-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--col-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border 0.15s;
+}
+.nb-input:focus { border-color: var(--accent); }
+.nb-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+.nb-input::placeholder, .nb-textarea::placeholder { color: var(--text3); }
+.nb-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+.nb-cancel {
+  background: transparent; border: 1px solid var(--col-border);
+  color: var(--text2); padding: 9px 18px; border-radius: 8px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px;
+  transition: all 0.15s;
+}
+.nb-cancel:hover { background: var(--bg3); color: var(--text); }
+
+/* App header: logo cliquable quand on est sur un tableau */
+.branding-wrap { cursor: pointer; }
+
+/* Logo clickable */
+#app-header .branding-wrap { cursor: pointer; }
+
+/* board screen header visible uniquement quand on est sur boards-screen */
+#boards-header-zone { display: none; }
+#boards-header-zone.active { display: flex; align-items: center; }
+
+/* project-bar hidden on boards screen */
+body.on-boards .project-bar { display: none; }
+body.on-boards .board-wrap { display: none; }
+body.on-boards .bg-fab { display: none; }
+body.on-boards .bg-panel { display: none; }
+body.on-board #boards-screen { display: none; }
+
+
 /* --- MENU PROFIL --- */
 .user-profile-wrap {
   position: relative;
@@ -822,8 +1037,8 @@ header {
 
 
 
-<header>
-  <div class="branding-wrap">
+<header id="app-header">
+  <div class="branding-wrap" onclick="goToBoardsList()" title="Retour à mes tableaux">
     <img src="logo.png" alt="Logo" class="app-logo">
     <div class="app-title">
       <span class="app-title-monkey">Monkey</span><span class="app-title-board">Board</span>
@@ -851,6 +1066,40 @@ header {
 </div>
 
 <div class="board-wrap"><div class="board" id="board"></div></div>
+
+<!-- ÉCRAN LISTE DES TABLEAUX -->
+<div id="boards-screen">
+  <div class="boards-screen-title">Mes tableaux 🐒</div>
+  <div class="boards-screen-sub">Choisissez un tableau ou créez-en un nouveau.</div>
+  <div class="boards-grid" id="boardsGrid"></div>
+</div>
+
+<!-- MODAL CRÉATION D'UN NOUVEAU TABLEAU -->
+<div class="new-board-modal-overlay" id="newBoardModal">
+  <div class="new-board-modal">
+    <button class="modal-close" onclick="closeNewBoardModal()">×</button>
+    <h2>Nouveau tableau 🎉</h2>
+
+    <div class="nb-monkey-preview">
+      <span class="nb-monkey-badge">🐒</span>
+      <div class="nb-monkey-info">
+        <div class="nb-monkey-label">MonkeyRace tiré au sort</div>
+        <div class="nb-monkey-name" id="nbMonkeyName">—</div>
+      </div>
+    </div>
+
+    <label class="nb-form-label">Nom du projet</label>
+    <input class="nb-input" id="nbProjectName" placeholder="Nom du projet…" type="text">
+
+    <label class="nb-form-label">Description <span style="color:var(--red)">*</span></label>
+    <textarea class="nb-input nb-textarea" id="nbDescription" placeholder="Décrivez votre projet en quelques mots…"></textarea>
+
+    <div class="nb-actions">
+      <button class="nb-cancel" onclick="closeNewBoardModal()">Annuler</button>
+      <button class="btn-primary" onclick="confirmCreateBoard()">Créer le tableau</button>
+    </div>
+  </div>
+</div>
 
 
 
@@ -997,72 +1246,235 @@ auth.onAuthStateChanged(user => {
       userImg.style.display = 'block';
     }
     
-    loadDataFromFirebase();
+    loadBoardsList();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
+    showBoardsScreen(false);
   }
 });
 
+// ══════════════════════════════════════════════
+// GESTION DE LA LISTE DES TABLEAUX
+// ══════════════════════════════════════════════
 
+let currentBoardId = null;
+let boardsList = []; // [{id, name, description, updatedAt}]
 
-async function loadDataFromFirebase() {
-
+async function loadBoardsList() {
   try {
+    const snap = await db.collection('users').doc(currentUser.uid)
+      .collection('boards').orderBy('updatedAt', 'desc').get();
+    
+    boardsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    showBoardsScreen(true);
+    renderBoardsGrid();
+  } catch (err) {
+    console.error("Erreur chargement tableaux", err);
+    // Si la collection n'existe pas encore, on affiche quand même
+    boardsList = [];
+    showBoardsScreen(true);
+    renderBoardsGrid();
+  }
+}
 
-    const docRef = db.collection('boards').doc(currentUser.uid);
+function showBoardsScreen(active) {
+  const bs = document.getElementById('boards-screen');
+  const bw = document.querySelector('.board-wrap');
+  const pb = document.querySelector('.project-bar');
+  const fab = document.querySelector('.bg-fab');
+  const bgp = document.getElementById('bgPanel');
 
+  if (active) {
+    bs.classList.add('active');
+    bw.style.display = 'none';
+    pb.style.display = 'none';
+    fab.style.display = 'none';
+    bgp.style.display = 'none';
+    currentBoardId = null;
+  } else {
+    bs.classList.remove('active');
+    bw.style.display = '';
+    pb.style.display = '';
+    fab.style.display = '';
+    bgp.style.display = '';
+  }
+}
+
+function renderBoardsGrid() {
+  const grid = document.getElementById('boardsGrid');
+  grid.innerHTML = '';
+
+  // Carte "nouveau tableau"
+  const newCard = document.createElement('div');
+  newCard.className = 'board-card board-card-new';
+  newCard.innerHTML = `
+    <div class="board-card-new-icon">+</div>
+    <span>Nouveau tableau</span>
+  `;
+  newCard.onclick = openNewBoardModal;
+  grid.appendChild(newCard);
+
+  // Cartes des tableaux existants
+  boardsList.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'board-card';
+    const date = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
+    card.innerHTML = `
+      <div class="board-card-actions">
+        <button class="board-card-del" onclick="deleteBoard(event, '${b.id}')" title="Supprimer">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+      <div class="board-card-name">${esc(b.name)}</div>
+      <div class="board-card-desc">${esc(b.description || 'Aucune description')}</div>
+      <div class="board-card-meta">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Modifié le ${date}
+      </div>
+    `;
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.board-card-actions')) return;
+      openBoard(b.id);
+    });
+    grid.appendChild(card);
+  });
+}
+
+async function deleteBoard(e, boardId) {
+  e.stopPropagation();
+  const b = boardsList.find(x => x.id === boardId);
+  if (!b) return;
+  if (!confirm(`Supprimer le tableau "${b.name}" ? Cette action est irréversible.`)) return;
+  try {
+    await db.collection('users').doc(currentUser.uid)
+      .collection('boards').doc(boardId).delete();
+    boardsList = boardsList.filter(x => x.id !== boardId);
+    renderBoardsGrid();
+    toast('Tableau supprimé');
+  } catch(err) {
+    console.error(err);
+    toast('Erreur lors de la suppression');
+  }
+}
+
+async function openBoard(boardId) {
+  try {
+    const docRef = db.collection('users').doc(currentUser.uid)
+      .collection('boards').doc(boardId);
     const docSnap = await docRef.get();
 
-    
-
     if (docSnap.exists) {
-
-      state = docSnap.data();
-
-      // Applique le fond sauvegardé si existant
-
-      if(state.bg) document.body.style.background = state.bg;
-
-      initBoardName();
-
+      const data = docSnap.data();
+      state = data.kanban || getDefaultState();
+      state.boardName = data.name || state.boardName;
     } else {
-
-      // C'est un nouvel utilisateur, on sauvegarde l'état par défaut
-
-      await saveStateToFirebase();
-
+      state = getDefaultState();
     }
 
+    currentBoardId = boardId;
+    if (state.bg) document.body.style.background = state.bg;
+    initBoardName();
+    showBoardsScreen(false);
     render();
-
-  } catch (err) {
-
-    console.error("Erreur de chargement", err);
-
-    toast("Erreur de connexion à la base");
-
+  } catch(err) {
+    console.error("Erreur ouverture tableau", err);
+    toast("Erreur d'ouverture");
   }
+}
 
+function goToBoardsList() {
+  if (currentBoardId) {
+    // Sauvegarder avant de partir
+    saveStateToFirebase();
+  }
+  showBoardsScreen(true);
+  renderBoardsGrid();
+}
+
+function getDefaultState() {
+  return {
+    bg: '#0f1117',
+    columns: [
+      {id:'col-1',title:'📋 Backlog',color:'#6366f1',collapsed:false,cards:[]},
+      {id:'col-2',title:'🔄 En cours',color:'#f59e0b',collapsed:false,cards:[]},
+      {id:'col-3',title:'✅ Terminé',color:'#10b981',collapsed:false,cards:[]}
+    ]
+  };
+}
+
+// ── MODAL NOUVEAU TABLEAU ──
+let nbMonkey = '';
+
+function openNewBoardModal() {
+  nbMonkey = monkeyRaces[Math.floor(Math.random() * monkeyRaces.length)];
+  document.getElementById('nbMonkeyName').textContent = nbMonkey;
+  document.getElementById('nbProjectName').value = 'Projet ' + nbMonkey;
+  document.getElementById('nbDescription').value = '';
+  document.getElementById('newBoardModal').classList.add('active');
+  setTimeout(() => document.getElementById('nbDescription').focus(), 100);
+}
+
+function closeNewBoardModal() {
+  document.getElementById('newBoardModal').classList.remove('active');
+}
+
+async function confirmCreateBoard() {
+  const name = document.getElementById('nbProjectName').value.trim();
+  const desc = document.getElementById('nbDescription').value.trim();
+
+  if (!name) { toast('Donnez un nom au tableau !'); return; }
+  if (!desc) { toast('La description est obligatoire 🐒'); document.getElementById('nbDescription').focus(); return; }
+
+  const newBoard = {
+    name,
+    description: desc,
+    monkey: nbMonkey,
+    updatedAt: Date.now(),
+    kanban: getDefaultState()
+  };
+  newBoard.kanban.boardName = name;
+
+  try {
+    const ref = await db.collection('users').doc(currentUser.uid)
+      .collection('boards').add(newBoard);
+    closeNewBoardModal();
+    toast('Tableau créé ! 🎉');
+    // Ouvrir directement le nouveau tableau
+    boardsList.unshift({ id: ref.id, name, description: desc, updatedAt: newBoard.updatedAt });
+    openBoard(ref.id);
+  } catch(err) {
+    console.error(err);
+    toast('Erreur lors de la création');
+  }
 }
 
 
 
+
+async function loadDataFromFirebase() {
+  // Cette fonction est maintenant remplacée par loadBoardsList() + openBoard()
+  // Gardée pour compatibilité
+}
+
 async function saveStateToFirebase() {
-
-  if (!currentUser) return;
-
+  if (!currentUser || !currentBoardId) return;
   try {
-
-    await db.collection('boards').doc(currentUser.uid).set(state);
-
+    const boardMeta = boardsList.find(b => b.id === currentBoardId);
+    const updatedAt = Date.now();
+    await db.collection('users').doc(currentUser.uid)
+      .collection('boards').doc(currentBoardId).set({
+        name: state.boardName || (boardMeta ? boardMeta.name : 'Sans titre'),
+        description: boardMeta ? boardMeta.description : '',
+        monkey: boardMeta ? (boardMeta.monkey || '') : '',
+        updatedAt,
+        kanban: state
+      }, { merge: true });
+    // Mettre à jour la date locale
+    if (boardMeta) boardMeta.updatedAt = updatedAt;
   } catch (err) {
-
     console.error("Erreur de sauvegarde", err);
-
     toast("Erreur de sauvegarde !");
-
   }
-
 }
 
 // Appelle cette fonction AVANT chaque modification (comme avant)
@@ -1126,20 +1538,13 @@ window.addEventListener('keydown', e => {
 
 
 
-let state={
-
-  bg: '#0f1117', 
-
-  columns:[
-
+let state = {
+  bg: '#0f1117',
+  columns: [
     {id:'col-1',title:'📋 Backlog',color:'#6366f1',collapsed:false,cards:[]},
-
     {id:'col-2',title:'🔄 En cours',color:'#f59e0b',collapsed:false,cards:[]},
-
     {id:'col-3',title:'✅ Terminé',color:'#10b981',collapsed:false,cards:[]}
-
   ]
-
 };
 
 let nextId = Date.now(); 
