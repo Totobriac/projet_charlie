@@ -224,7 +224,19 @@ header {
 
 .board{display:flex;gap:16px;align-items:flex-start;min-width:max-content}
 
+/* Garantir la visibilité du titre et sous-titre sur n'importe quel fond */
+.boards-screen-title, 
+.boards-screen-sub {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 5;
+}
 
+/* On s'assure que le profil dropdown reste au dessus du panneau de fond */
+.profile-dropdown {
+  z-index: 1100 !important;
+}
 
 /* ── COLUMN ── */
 
@@ -556,6 +568,7 @@ header {
 /* ── MODAL ── */
 
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+#boardActionModal.open{display:flex!important}
 
 .modal-overlay.active{display:flex}
 
@@ -667,16 +680,29 @@ header {
 
 /* ── BG PICKER ── */
 
-.bg-fab{position:fixed;bottom:20px;left:20px;width:40px;height:40px;border-radius:12px;background:var(--bg2);border:1px solid var(--col-border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;z-index:150;transition:all .15s;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.bg-fab{position:fixed;bottom:20px;left:20px;width:40px;height:40px;border-radius:12px;background:var(--bg2);border:1px solid var(--col-border);cursor:pointer;display:none !important;align-items:center;justify-content:center;font-size:17px;z-index:150;transition:all .15s;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 
 .bg-fab:hover{transform:translateY(-2px);box-shadow:0 5px 18px rgba(0,0,0,.3)}
 
 
 
-.bg-panel{position:fixed;bottom:68px;left:20px;background:var(--bg2);border:1px solid var(--col-border);border-radius:16px;width:288px;z-index:151;overflow:hidden;box-shadow:0 14px 45px rgba(0,0,0,.38);pointer-events:none;opacity:0;transform:translateY(10px) scale(.97);transition:opacity .2s,transform .22s cubic-bezier(.34,1.2,.64,1)}
+.bg-panel {
+  position: fixed;
+  top: 70px;
+  right: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--col-border);
+  border-radius: 16px;
+  width: 288px;
+  z-index: 2000; /* Plus haut que le header et le reste */
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: none; /* On utilise display pour éviter les bugs d'opacité */
+}
 
-.bg-panel.open{pointer-events:all;opacity:1;transform:translateY(0) scale(1)}
-
+.bg-panel.open {
+  display: block;
+}
 
 
 .bp-tabs{display:flex;border-bottom:1px solid var(--col-border)}
@@ -803,15 +829,30 @@ header {
   align-items: center;
   gap: 6px;
 }
+/* Positionnement du bouton options sur la carte projet */
 .board-card-actions {
   position: absolute;
   top: 12px;
   right: 12px;
-  display: flex;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.15s;
+  z-index: 5;
 }
+
+.board-opt-btn {
+  background: var(--bg3);
+  border: 1px solid var(--col-border);
+  border-radius: 6px;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.board-opt-btn:hover {
+  background: var(--accent);
+  color: white;
+}
+
 .board-card:hover .board-card-actions { opacity: 1; }
 .board-card-del {
   width: 28px; height: 28px;
@@ -962,40 +1003,41 @@ body.on-board #boards-screen { display: none; }
 .profile-dropdown {
   display: none;
   position: absolute;
-  top: 45px;
+  top: 50px;
   right: 0;
   background: var(--bg2);
   border: 1px solid var(--col-border);
-  border-radius: 10px;
-  min-width: 160px;
+  border-radius: 12px;
+  min-width: 200px;
   box-shadow: var(--shadow);
-  z-index: 200;
-  padding: 6px;
+  z-index: 2100;
+  padding: 8px;
 }
 
-.profile-dropdown.active {
-  display: block;
-}
+.profile-dropdown.active { display: block; }
 
 .dropdown-item {
   width: 100%;
-  padding: 10px;
-  font-size: 13px;
-  color: var(--text2);
-  border-radius: 7px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+  border-radius: 8px;
   background: none;
   border: none;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.1s;
+  gap: 12px;
+  transition: background 0.2s;
 }
 
-.dropdown-item:hover {
-  background: var(--bg3);
-  color: var(--text);
+.dropdown-item:hover { background: var(--bg3); }
+
+.dropdown-sep {
+  height: 1px;
+  background: var(--col-border);
+  margin: 6px 0;
 }
 
 .dropdown-item.danger:hover {
@@ -1044,12 +1086,16 @@ body.on-board #boards-screen { display: none; }
       <span class="app-title-monkey">Monkey</span><span class="app-title-board">Board</span>
     </div>
   </div>
-  
+
   <div class="header-actions">
     <div class="user-profile-wrap" onclick="toggleProfileMenu(event)">
       <img id="userImg" src="" alt="Profile" class="user-avatar" style="display:none;">
       <div id="profileDropdown" class="profile-dropdown">
-        <button class="dropdown-item danger" onclick="signOut()">
+        <button id="bg-option" class="dropdown-item" onclick="toggleBgPanel()">
+          <span>🎨</span> Modifier le thème
+        </button>
+        <div class="dropdown-sep"></div>
+        <button class="dropdown-item danger" onclick="signOut()" style="color: var(--red);">
           <span>🚪</span> Se déconnecter
         </button>
       </div>
@@ -1058,11 +1104,7 @@ body.on-board #boards-screen { display: none; }
 </header>
 
 <div class="project-bar">
-  <span id="boardTitleDisplay" 
-        contenteditable="true" 
-        onblur="updateBoardName(this)" 
-        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
-  </span>
+  <span id="boardTitleDisplay" style="cursor: default;"></span>
 </div>
 
 <div class="board-wrap"><div class="board" id="board"></div></div>
@@ -1103,13 +1145,23 @@ body.on-board #boards-screen { display: none; }
 
 
 
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
-
-  <div class="modal"><button class="modal-close" onclick="closeModal()">×</button><div id="modalContent"></div></div>
-
+<div class="modal-overlay" id="confirmDeleteModal">
+  <div class="modal" style="text-align: center;">
+    <h2 style="font-family:'Fraunces'; color:var(--red); margin-bottom:10px;">Supprimer le projet ?</h2>
+    <p id="deleteProjectName" style="margin-bottom:20px; color:var(--text2); font-weight: 500;"></p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn" style="background:var(--green); color:white; padding:10px 20px; border-radius:8px; border:none; cursor:pointer; font-weight:600;" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn" style="background:var(--red); color:white; padding:10px 20px; border-radius:8px; border:none; cursor:pointer; font-weight:600;" id="confirmDeleteBtn">Supprimer</button>
+    </div>
+  </div>
 </div>
 
 
+
+<!-- Modal générique pour les actions landing (renommer, description) -->
+<div class="modal-overlay" id="boardActionModal" onclick="closeBoardActionModal(event)" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" id="boardActionContent" style="max-width:420px;width:95vw;"></div>
+</div>
 
 <div class="ctx-menu" id="ctxMenu"></div>
 
@@ -1281,22 +1333,19 @@ function showBoardsScreen(active) {
   const bs = document.getElementById('boards-screen');
   const bw = document.querySelector('.board-wrap');
   const pb = document.querySelector('.project-bar');
-  const fab = document.querySelector('.bg-fab');
-  const bgp = document.getElementById('bgPanel');
 
   if (active) {
     bs.classList.add('active');
-    bw.style.display = 'none';
-    pb.style.display = 'none';
-    fab.style.display = 'none';
-    bgp.style.display = 'none';
+    if (bw) bw.style.display = 'none';
+    if (pb) pb.style.display = 'none';
+    
+    // Application du fond sur l'écran de sélection
+    document.body.style.background = state.bg || 'var(--bg)';
     currentBoardId = null;
   } else {
     bs.classList.remove('active');
-    bw.style.display = '';
-    pb.style.display = '';
-    fab.style.display = '';
-    bgp.style.display = '';
+    if (bw) bw.style.display = '';
+    if (pb) pb.style.display = '';
   }
 }
 
@@ -1304,41 +1353,142 @@ function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
   grid.innerHTML = '';
 
-  // Carte "nouveau tableau"
+  // Carte Nouveau
   const newCard = document.createElement('div');
   newCard.className = 'board-card board-card-new';
-  newCard.innerHTML = `
-    <div class="board-card-new-icon">+</div>
-    <span>Nouveau tableau</span>
-  `;
+  newCard.innerHTML = `<div class="board-card-new-icon">+</div><span>Nouveau tableau</span>`;
   newCard.onclick = openNewBoardModal;
   grid.appendChild(newCard);
 
-  // Cartes des tableaux existants
+  // Cartes Projets
   boardsList.forEach(b => {
     const card = document.createElement('div');
     card.className = 'board-card';
-    const date = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
     card.innerHTML = `
-      <div class="board-card-actions">
-        <button class="board-card-del" onclick="deleteBoard(event, '${b.id}')" title="Supprimer">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-      </div>
+      <div class="board-card-actions" style="position:absolute; top:12px; right:12px;">
+    <button class="board-opt-btn" onclick="openBoardCtx(event, '${b.id}')">···</button>
+  </div>
       <div class="board-card-name">${esc(b.name)}</div>
       <div class="board-card-desc">${esc(b.description || 'Aucune description')}</div>
-      <div class="board-card-meta">
-        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Modifié le ${date}
-      </div>
+      <div class="board-card-meta">Modifié le ${new Date(b.updatedAt).toLocaleDateString()}</div>
     `;
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.board-card-actions')) return;
-      openBoard(b.id);
-    });
+    card.onclick = (e) => { if(!e.target.closest('.board-card-actions')) openBoard(b.id); };
     grid.appendChild(card);
   });
 }
+
+
+
+// Menu contextuel pour les cartes de l'accueil
+function openBoardCtx(e, boardId) {
+  e.stopPropagation();
+  const b = boardsList.find(x => x.id === boardId);
+  showCtx(e.clientX, e.clientY, `
+    <button class="ctx-item" onclick="renameBoardPrompt('${b.id}')">✏️ Renommer</button>
+    <button class="ctx-item" onclick="editBoardDescPrompt('${b.id}')">📝 Modifier description</button>
+    <button class="ctx-item" onclick="cloneBoard('${b.id}')">⧉ Cloner le projet</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" onclick="confirmDeleteBoard('${b.id}')">🗑 Supprimer</button>
+  `);
+}
+
+// --- ACTIONS PROJETS ---
+
+function renameBoardPrompt(id) {
+  hideCtx();
+  const b = boardsList.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('boardActionContent').innerHTML = `
+    <div class="modal-label" style="margin-bottom:12px;">Renommer le projet</div>
+    <input type="text" id="editBoardNameInput" class="nb-input" value="${esc(b.name)}" style="width:100%; margin-bottom:20px;" onkeydown="if(event.key==='Enter')executeRenameBoard('${id}');if(event.key==='Escape')closeBoardActionModal()">
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn-secondary" onclick="closeBoardActionModal()">Annuler</button>
+      <button class="btn-primary" onclick="executeRenameBoard('${id}')">Enregistrer</button>
+    </div>
+  `;
+  document.getElementById('boardActionModal').classList.add('open');
+  setTimeout(() => document.getElementById('editBoardNameInput').focus(), 80);
+}
+
+
+
+function executeRenameBoard(id) {
+  const newName = document.getElementById('editBoardNameInput').value.trim();
+  if (!newName) return;
+
+  db.collection('users').doc(currentUser.uid).collection('boards').doc(id).update({
+    name: newName,
+    "kanban.boardName": newName, // Met à jour le titre interne aussi
+    updatedAt: Date.now()
+  }).then(() => {
+    closeBoardActionModal();
+    toast("Projet renommé ✨");
+    loadBoardsList();
+  }).catch(err => console.error(err));
+}
+
+function editBoardDescPrompt(id) {
+  hideCtx();
+  const b = boardsList.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('boardActionContent').innerHTML = `
+    <div class="modal-label" style="margin-bottom:12px;">Modifier la description</div>
+    <textarea id="editBoardDescInput" class="nb-input nb-textarea" style="width:100%; margin-bottom:20px; min-height:100px;">${esc(b.description || '')}</textarea>
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn-secondary" onclick="closeBoardActionModal()">Annuler</button>
+      <button class="btn-primary" onclick="executeEditDescBoard('${id}')">Enregistrer</button>
+    </div>
+  `;
+  document.getElementById('boardActionModal').classList.add('open');
+  setTimeout(() => document.getElementById('editBoardDescInput').focus(), 80);
+}
+
+async function cloneBoard(id) {
+  const b = boardsList.find(x => x.id === id);
+  const doc = await db.collection('users').doc(currentUser.uid).collection('boards').doc(id).get();
+  const data = doc.data();
+  data.name += " (Copie)";
+  data.updatedAt = Date.now();
+  await db.collection('users').doc(currentUser.uid).collection('boards').add(data);
+  loadBoardsList();
+  toast("Projet cloné !");
+}
+
+function confirmDeleteBoard(id) {
+  hideCtx();
+  const b = boardsList.find(x => x.id === id);
+  if(!b) return;
+
+  const modal = document.getElementById('confirmDeleteModal');
+  const nameDisplay = document.getElementById('deleteProjectName');
+  
+  if (modal && nameDisplay) {
+    nameDisplay.innerText = b.name;
+    modal.style.display = 'flex';
+    
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
+      try {
+        await db.collection('users').doc(currentUser.uid).collection('boards').doc(id).delete();
+        closeDeleteModal();
+        toast("Projet supprimé");
+        loadBoardsList();
+      } catch(e) { toast("Erreur suppression"); }
+    };
+  } else {
+    // Backup si le HTML est cassé
+    if(confirm("Supprimer " + b.name + " ?")) {
+      db.collection('users').doc(currentUser.uid).collection('boards').doc(id).delete().then(() => loadBoardsList());
+    }
+  }
+}
+
+async function executeDelete(id) {
+  await db.collection('users').doc(currentUser.uid).collection('boards').doc(id).delete();
+  toast("Projet supprimé");
+  loadBoardsList();
+} 
+
+function closeDeleteModal() { document.getElementById('confirmDeleteModal').style.display = 'none'; }
 
 async function deleteBoard(e, boardId) {
   e.stopPropagation();
@@ -1357,7 +1507,22 @@ async function deleteBoard(e, boardId) {
   }
 }
 
+function executeEditDescBoard(id) {
+  const newDesc = document.getElementById('editBoardDescInput').value.trim();
+  
+  db.collection('users').doc(currentUser.uid).collection('boards').doc(id).update({
+    description: newDesc,
+    updatedAt: Date.now()
+  }).then(() => {
+    closeBoardActionModal();
+    toast("Description mise à jour 📝");
+    loadBoardsList();
+  }).catch(err => console.error(err));
+}
+
 async function openBoard(boardId) {
+  // Fermer le panneau de fond si on entre dans un projet
+  document.getElementById('bgPanel')?.classList.remove('open');
   try {
     const docRef = db.collection('users').doc(currentUser.uid)
       .collection('boards').doc(boardId);
@@ -1560,17 +1725,23 @@ function toast(msg){const t=document.getElementById('toast');document.getElement
 
 
 function render() {
-  // Met à jour le texte dans la barre de projet dédiée (et non dans le header)
-  const titleEl = document.getElementById('boardTitleDisplay');
-  if (titleEl) titleEl.innerText = state.boardName;
+  // FORCE L'APPLICATION DU FOND SAUVEGARDÉ
+  if (state.bg) {
+    document.body.style.background = state.bg;
+  } else {
+    document.body.style.background = 'var(--bg)';
+  }
 
-  document.body.style.background = state.bg || '#0f1117';
-  
+  const titleEl = document.getElementById('boardTitleDisplay');
+  if (titleEl) titleEl.innerText = state.boardName || "Projet sans titre";
+
   const boardEl = document.getElementById('board');
-  boardEl.innerHTML = '';
-  state.columns.forEach(col => boardEl.appendChild(makeCol(col)));
-  boardEl.appendChild(makeAddCol());
-  initSortable();
+  if (boardEl) {
+    boardEl.innerHTML = '';
+    state.columns.forEach(col => boardEl.appendChild(makeCol(col)));
+    boardEl.appendChild(makeAddCol());
+    initSortable();
+  }
 }
 
 
@@ -1725,8 +1896,15 @@ function makeCard(card,colId){
 
       ta.focus();
 
-      ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); } else if (e.key === 'Escape') { ta.value = ''; ta.blur(); } });
-
+ta.addEventListener('keydown', e => { 
+  if (e.key === 'Enter' && !e.shiftKey) { 
+    e.preventDefault(); 
+    ta.blur(); // Le blur déclenchera l'enregistrement que tu as déjà codé
+  } else if (e.key === 'Escape') { 
+    ta.value = ''; 
+    ta.blur(); 
+  } 
+});
       ta.addEventListener('blur', () => {
 
         const val = ta.value.trim();
@@ -2108,50 +2286,63 @@ function ctxDupCard(){hideCtx();const col=state.columns.find(c=>c.id===ctxCardCo
 
 
 
-function openModal(cardId){const f=findCard(cardId);if(!f)return;document.getElementById('modalOverlay').classList.add('active');renderModal(f.card,f.col)}
-
+function openModal(cardId) {
+  const f = findCard(cardId);
+  if (!f) return;
+  
+  const overlay = document.getElementById('modalOverlay');
+  if (!overlay) {
+    console.error("Erreur : L'élément 'modalOverlay' est introuvable dans le HTML.");
+    return;
+  }
+  
+  overlay.classList.add('active');
+  renderModal(f.card, f.col);
+}
 function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
 function updateModalTitle(id, val) { const f = findCard(id); if (f && val.trim()) { f.card.title = val.trim(); render(); saveStateToFirebase(); } }
 
 function renderModal(card,col){
-
   const checks=card.checks||[]; const done=checks.filter(c=>c.d).length; const pct=checks.length?Math.round(done/checks.length*100):0;
 
+  // 1. On injecte le HTML
   document.getElementById('modalContent').innerHTML=`
-
     <textarea id="modalTitleInput" class="modal-title-input" rows="1" oninput="autoResize(this); updateModalTitle('${card.id}', this.value)">${esc(card.title)}</textarea>
-
     <div class="modal-col-tag"><span style="width:8px;height:8px;border-radius:50%;background:${col.color};display:inline-block"></span> dans <b style="color:var(--text2);margin-left:4px">${esc(col.title)}</b></div>
-
     <div class="modal-section">
-
       <div class="modal-label">Description</div>
-
       <textarea class="modal-desc" placeholder="Ajouter une description…" onchange="updateDesc('${card.id}',this.value)">${esc(card.desc||'')}</textarea>
-
     </div>
-
     <div class="modal-section">
-
       <div class="modal-label">Checklist${checks.length?` <span style="font-weight:400;color:var(--text3);margin-left:6px">${done}/${checks.length} · ${pct}%</span>`:''}</div>
-
       ${checks.length?`<div class="progress-bar"><div class="progress-fill" id="pf" style="width:${pct}%"></div></div>`:''}
-
       <div class="checklist">${checks.map((ch,i)=>`
-
         <div class="check-item"><input type="checkbox" id="chk${i}" ${ch.d?'checked':''} onchange="toggleCheck('${card.id}',${i},this.checked)"><label for="chk${i}">${esc(ch.t)}</label><button class="check-del-btn" onclick="delCheck('${card.id}', ${i})" title="Supprimer">×</button></div>`).join('')}
-
       </div>
-
       <input class="add-check-input" placeholder="+ Ajouter un élément…" onkeydown="addCheck(event,'${card.id}')">
-
     </div>
-
   `;
 
-  setTimeout(() => autoResize(document.getElementById('modalTitleInput')), 0);
-
+  // 2. ON AJOUTE LA LOGIQUE "ENTRÉE" JUSTE ICI :
+  const modalTitleInput = document.getElementById('modalTitleInput');
+  if (modalTitleInput) {
+    // On ajuste la taille au démarrage
+    setTimeout(() => autoResize(modalTitleInput), 0);
+    
+    // On écoute la touche Entrée
+    modalTitleInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault(); // Empêche le retour à la ligne
+        const val = modalTitleInput.value.trim();
+        if(val) {
+          updateModalTitle(card.id, val); 
+          closeModal(); // Ferme la modale
+          toast("Modifié ✨");
+        }
+      }
+    });
+  }
 }
 
 // Au chargement initial ou si le nom est vide
@@ -2168,7 +2359,12 @@ function updateBoardName(el) {
   if (val && val !== state.boardName) {
     pushHistory();
     state.boardName = val;
-    saveStateToFirebase();
+    saveStateToFirebase(); // Sauvegarde le Kanban interne
+    
+    // MAIS AUSSI le champ "name" au niveau supérieur pour le Dashboard
+    db.collection('users').doc(currentUser.uid).collection('boards').doc(currentBoardId).update({
+      name: val
+    });
   } else {
     el.innerText = state.boardName;
   }
@@ -2177,6 +2373,10 @@ function updateBoardName(el) {
 // Appelle initBoardName() dans ta fonction loadDataFromFirebase après avoir reçu le state
 
 function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
+function closeBoardActionModal(e){
+  if(e && e.target !== document.getElementById('boardActionModal')) return;
+  document.getElementById('boardActionModal').classList.remove('open');
+}
 
 function closeModalOutside(e){if(e.target===document.getElementById('modalOverlay'))closeModal()}
 
@@ -2190,9 +2390,61 @@ function delCheck(cardId, checkIndex) { const f=findCard(cardId); if(!f) return;
 
 
 
-const BP_COLORS=['#0f172a','#171717','#312e81','#14532d','#701a75','#581c87','#f8fafc','#f0fdf4','#eff6ff','#fffbeb'];
+const BP_COLORS = [
+  // --- JUNGLE & NATURE (Tons de l'image) ---
+  '#1A2F23', '#2D3B2D', '#3C2F2F', '#1F2421', '#4E6B56', 
+  '#161A1D', '#0B090A', '#1F1F1F', '#2C3E50', '#212529',
+  // --- POP & VIFS (Tons de l'image) ---
+  '#F1C40F', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
+  '#FF006E', '#8338EC', '#3A86FF', '#FB5607', '#FFBE0B',
+  '#D4A373', '#FAEDCD', '#CCD5AE', '#E9EDC9', '#FEFAE0',
+  // --- NOIR, BLANC & GRIS ---
+  '#FFFFFF', '#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA',
+  '#ADB5BD', '#6C757D', '#495057', '#343A40', '#000000'
+];
 
-const BP_GRADS=['linear-gradient(135deg, #0f172a 0%, #3b82f6 100%)', 'linear-gradient(135deg, #1e1b4b 0%, #db2777 100%)', 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', 'linear-gradient(135deg, #4a044e 0%, #a855f7 100%)', 'linear-gradient(135deg, #450a0a 0%, #ef4444 100%)', 'linear-gradient(135deg, #171717 0%, #525252 100%)', 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)', 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)'];
+const BP_GRADS = [
+  // --- STYLE JUNGLE (10) ---
+  'linear-gradient(135deg, #1A2F23 0%, #4E6B56 100%)',
+  'linear-gradient(135deg, #0B090A 0%, #3C2F2F 100%)',
+  'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
+  'linear-gradient(135deg, #1F2421 0%, #212529 100%)',
+  'linear-gradient(135deg, #4E6B56 0%, #1A2F23 100%)',
+  'linear-gradient(135deg, #2c3e50 0%, #000000 100%)',
+  'linear-gradient(135deg, #1a1a1a 0%, #4E6B56 100%)',
+  'linear-gradient(135deg, #3C2F2F 0%, #1A2F23 100%)',
+  'linear-gradient(135deg, #0f462a 0%, #0d0d0d 100%)',
+  'linear-gradient(135deg, #2D3B2D 0%, #161A1D 100%)',
+
+  // --- STYLE POP NEON (15) ---
+  'linear-gradient(135deg, #FF006E 0%, #8338EC 100%)',
+  'linear-gradient(135deg, #3A86FF 0%, #FF006E 100%)',
+  'linear-gradient(135deg, #FFBE0B 0%, #FB5607 100%)',
+  'linear-gradient(135deg, #1ABC9C 0%, #3498DB 100%)',
+  'linear-gradient(135deg, #F1C40F 0%, #E74C3C 100%)',
+  'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)',
+  'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
+  'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)',
+  'linear-gradient(135deg, #ee0979 0%, #ff6a00 100%)',
+  'linear-gradient(135deg, #FC466B 0%, #3F5EFB 100%)',
+  'linear-gradient(135deg, #00F260 0%, #0575E6 100%)',
+  'linear-gradient(135deg, #FB5607 0%, #3A86FF 100%)',
+  'linear-gradient(135deg, #9B59B6 0%, #FF006E 100%)',
+  'linear-gradient(135deg, #3498DB 0%, #1ABC9C 100%)',
+  'linear-gradient(135deg, #8338EC 0%, #FFBE0B 100%)',
+
+  // --- STYLE MONOCHROME & ARDOISE (10) ---
+  'linear-gradient(135deg, #000000 0%, #434343 100%)',
+  'linear-gradient(135deg, #DEE2E6 0%, #ADB5BD 100%)',
+  'linear-gradient(135deg, #212529 0%, #6C757D 100%)',
+  'linear-gradient(135deg, #ffffff 0%, #CED4DA 100%)',
+  'linear-gradient(135deg, #495057 0%, #212529 100%)',
+  'linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%)',
+  'linear-gradient(135deg, #000000 0%, #2c3e50 100%)',
+  'linear-gradient(135deg, #F8F9FA 0%, #DEE2E6 100%)',
+  'linear-gradient(135deg, #343A40 0%, #000000 100%)',
+  'linear-gradient(135deg, #ADB5BD 0%, #212529 100%)'
+];
 
 let activeBpEl=null; let currentBpTab='colors';
 
@@ -2220,10 +2472,28 @@ function renderBpBody(){
 
 }
 
-function applyBg(value,type,el){ pushHistory(); document.body.style.background=value; state.bg = value; saveStateToFirebase(); if(activeBpEl)activeBpEl.classList.remove('active'); if(el){el.classList.add('active');activeBpEl=el} if(type==='solid'&&el){try{document.getElementById('bpCustom').value=value}catch(ex){}} }
+function applyBg(value, type, el) {
+  pushHistory();
+  state.bg = value; // On stocke dans l'état local
+  document.body.style.background = value; // On applique immédiatement
+  saveStateToFirebase(); // On envoie à la base de données
+  
+  if (activeBpEl) activeBpEl.classList.remove('active');
+  if (el) { el.classList.add('active'); activeBpEl = el; }
+}
+function toggleBgPanel() {
+  const panel = document.getElementById('bgPanel');
+  const isBoardsList = document.getElementById('boards-screen').classList.contains('active');
 
-function toggleBgPanel(){document.getElementById('bgPanel').classList.toggle('open')}
+  // Si on n'est pas sur l'accueil, on ne fait rien
+  if (!isBoardsList) {
+    toast("Le fond ne se change que sur l'accueil");
+    return;
+  }
 
+  panel.classList.toggle('open');
+  document.getElementById('profileDropdown').classList.remove('active');
+}
 
 
 initPan();
@@ -2231,6 +2501,13 @@ initPan();
 initBgPicker();
 
 </script>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
 
 </body>
 
