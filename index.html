@@ -1077,6 +1077,34 @@ body.on-board #boards-screen { display: none; }
   color: var(--red);
 }
 
+
+/* ── TAB BAR ── */
+.tab-bar{display:flex;align-items:center;gap:6px;padding:0 12px 0 6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-item{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:var(--bg3);color:var(--text2);white-space:nowrap;transition:all .15s;position:relative;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.tab-item:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.tab-item.active{color:#fff;background:none}
+.tab-item.active .tab-gradient{position:absolute;inset:0;border-radius:8px;z-index:-1;opacity:.9}
+.tab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:transform .15s}
+.tab-item:hover .tab-dot{transform:scale(1.3)}
+.tab-opts{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);border:none;cursor:pointer;color:inherit;font-size:11px;transition:background .12s;flex-shrink:0;line-height:1}
+.tab-opts:hover{background:rgba(255,255,255,.32)}
+.tab-add{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px dashed var(--col-border);background:none;color:var(--text3);white-space:nowrap;flex-shrink:0;transition:all .15s;font-family:'DM Sans',sans-serif}
+.tab-add:hover{border-color:var(--accent);color:var(--accent)}
+.project-bar{display:flex;align-items:center;gap:0;padding:0 8px;min-height:40px}
+#boardTitleDisplay{padding:0 12px 0 4px;font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;flex-shrink:0;border-right:1px solid var(--col-border);margin-right:8px}
+
+/* ── MINI DIALOG BUTTONS (used by tab dialogs) ── */
+.md-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.md-btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.md-btn-ghost{background:var(--bg3);color:var(--text2)}
+.md-btn-ghost:hover{color:var(--text)}
+.md-btn-primary{background:var(--accent);color:#fff}
+.md-btn-primary:hover{opacity:.88}
+.md-btn-danger{background:rgba(248,113,113,.15);color:var(--red)}
+.md-btn-danger:hover{background:rgba(248,113,113,.25)}
+.mini-dialog h3{font-size:15px;font-weight:500;color:var(--text);margin-bottom:14px}
+.mini-dialog p{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:0}
 </style>
 
 </head>
@@ -1136,7 +1164,12 @@ body.on-board #boards-screen { display: none; }
 </header>
 
 <div class="project-bar">
-  <span id="boardTitleDisplay" style="cursor: default;"></span>
+  <span id="boardTitleDisplay" style="cursor:default"></span>
+  <div class="tab-bar" id="tabBar"></div>
+  <button class="tab-add" onclick="addTab()">
+    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Onglet
+  </button>
 </div>
 
 <div class="board-wrap"><div class="board" id="board"></div></div>
@@ -1377,7 +1410,7 @@ async function loadBoardsList() {
     const snap = await db.collection('users').doc(currentUser.uid)
       .collection('boards').orderBy('updatedAt', 'desc').get();
     
-    boardsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    boardsList = snap.docs.map(d => ({ id: d.id, ...d.data() })); // includes kanban
     showBoardsScreen(true);
     renderBoardsGrid();
   } catch (err) {
@@ -1414,53 +1447,63 @@ function renderBoardsGrid() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  // 1. Bouton "Nouveau Tableau"
+  // 1. Bouton "Nouveau" (Toujours visible)
   const newCard = document.createElement('div');
   newCard.className = 'board-card board-card-new';
-  newCard.innerHTML = `<div class="board-card-new-icon">+</div><span>Nouveau tableau</span>`;
+  newCard.innerHTML = `<div class="board-card-new-icon" style="background:var(--bg3); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">+</div><span style="color:var(--text2)">Nouveau tableau</span>`;
   newCard.onclick = openNewBoardModal;
   grid.appendChild(newCard);
 
-  // 2. Vérification de la liste des projets
   if (!boardsList || boardsList.length === 0) return;
 
-  // 3. Boucle de génération des cartes
+  // 2. Génération des cartes de projets
   boardsList.forEach(project => {
-    // Calcul local des statistiques pour CE projet
-    const cols = project.kanban?.columns || [];
-    const nbListes = cols.length;
+    // Sécurité : on initialise des valeurs par défaut
+    const kanbanData = project.kanban || {};
+    // Support both old (columns) and new (tabs) format
+    const allCols = kanbanData.tabs
+      ? kanbanData.tabs.flatMap(t => t.columns || [])
+      : (kanbanData.columns || []);
+    const nbListes = allCols.length;
+    const nbOnglets = kanbanData.tabs ? kanbanData.tabs.length : 1;
+    
     let totalTaches = 0;
     let finies = 0;
 
-    cols.forEach(c => {
-      const cards = c.cards || [];
+    allCols.forEach(col => {
+      const cards = col.cards || [];
       totalTaches += cards.length;
-      
-      const t = c.title.toLowerCase();
-      if (t.includes('fini') || t.includes('terminé') || t.includes('done')) {
+      const titleLower = (col.title || '').toLowerCase();
+      if (titleLower.includes('fini') || titleLower.includes('terminé') || titleLower.includes('done')) {
         finies += cards.length;
       }
     });
 
-    // Formatage de la date locale
+    // Date de modification
     const dateTxt = project.updatedAt 
       ? new Date(project.updatedAt).toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) 
       : '---';
 
-    // Création de l'élément HTML
+    // Création de l'élément
     const card = document.createElement('div');
     card.className = 'board-card';
+    // Style forcé pour éviter le fond noir si le CSS saute
+    card.style.background = 'var(--bg2)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.minHeight = '160px';
+
     card.innerHTML = `
-      <div class="board-card-actions">
+      <div class="board-card-actions" style="position:absolute; top:12px; right:12px;">
         <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
       </div>
-      <div class="board-card-name">${esc(project.name)}</div>
-      <div class="board-card-desc">${esc(project.description || '')}</div>
+      <div class="board-card-name" style="color:var(--text); font-weight:600; margin-bottom:8px;">${esc(project.name || "Sans titre")}</div>
+      <div class="board-card-desc" style="color:var(--text2); font-size:13px; flex-grow:1;">${esc(project.description || "")}</div>
       
-      <div class="board-card-footer" style="margin-top:auto; padding-top:12px; display:flex; flex-direction:column; gap:8px; border-top:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text2);">
-          <span><b style="color:var(--accent)">${nbListes}</b> listes</span>
-          <span><b style="color:var(--accent)">${finies}/${totalTaches}</b> tâches</span>
+      <div class="board-card-footer" style="margin-top:auto; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="color:var(--text2)"><b style="color:var(--accent)">${nbOnglets}</b> onglet${nbOnglets>1?'s':''} · <b style="color:var(--accent)">${nbListes}</b> listes</span>
+          <span style="color:var(--text2)"><b style="color:var(--accent)">${finies}/${totalTaches}</b> tâches</span>
         </div>
         <div style="font-size:10px; color:var(--text3); text-align:right; font-style:italic;">
           Modifié le ${dateTxt}
@@ -1474,7 +1517,6 @@ function renderBoardsGrid() {
     grid.appendChild(card);
   });
 }
-
 // Menu contextuel pour les cartes de l'accueil
 function openBoardCtx(e, boardId) {
   e.stopPropagation();
@@ -1488,29 +1530,7 @@ function openBoardCtx(e, boardId) {
   `);
 }
 
-const dateModif = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric'
-}) : 'Inconnue';
 
-const card = document.createElement('div');
-card.className = 'board-card';
-card.innerHTML = `
-  <div class="board-card-actions">
-    <button class="board-opt-btn" onclick="openBoardCtx(event, '${b.id}')">···</button>
-  </div>
-  <div class="board-card-name">${esc(b.name)}</div>
-  <div class="board-card-desc">${esc(b.description || 'Aucune description')}</div>
-  
-  <div class="board-card-footer">
-    <div class="board-card-stats">
-      <span><b>${nbListes}</b> ${nbListes > 1 ? 'listes' : 'liste'}</span>
-      <span><b>${completedTasks}/${totalTasks}</b> tâches</span>
-    </div>
-    <div class="board-card-date">Modifié le ${dateModif}</div>
-  </div>
-`;
 
 // --- ACTIONS PROJETS ---
 
@@ -1669,6 +1689,7 @@ async function openBoard(boardId) {
     if (docSnap.exists) {
       const data = docSnap.data();
       state = data.kanban || getDefaultState();
+      state = migrateState(state);
       state.boardName = data.name || state.boardName;
     } else {
       state = getDefaultState();
@@ -1687,23 +1708,49 @@ async function openBoard(boardId) {
 
 function goToBoardsList() {
   if (currentBoardId) {
-    // Sauvegarder avant de partir
-    saveStateToFirebase();
+    saveStateToFirebase().then(() => {
+      showBoardsScreen(true);
+      loadBoardsList(); // Recharge depuis Firebase pour avoir les stats à jour
+    });
+  } else {
+    showBoardsScreen(true);
+    loadBoardsList();
   }
-  showBoardsScreen(true);
-  loadUserSettings();
-  renderBoardsGrid();
 }
 
 function getDefaultState() {
   return {
     bg: '#0f1117',
-    columns: [
-      {id:'col-1',title:'📋 Backlog',color:'#6366f1',collapsed:false,cards:[]},
-      {id:'col-2',title:'🔄 En cours',color:'#f59e0b',collapsed:false,cards:[]},
-      {id:'col-3',title:'✅ Terminé',color:'#10b981',collapsed:false,cards:[]}
-    ]
+    tabs: [
+      { id: 'tab-1', name: 'Principal', columns: [
+        {id:'col-1',title:'📋 Backlog',color:'#6366f1',collapsed:false,cards:[]},
+        {id:'col-2',title:'🔄 En cours',color:'#f59e0b',collapsed:false,cards:[]},
+        {id:'col-3',title:'✅ Terminé',color:'#10b981',collapsed:false,cards:[]}
+      ]}
+    ],
+    activeTab: 0
   };
+}
+
+function migrateState(st) {
+  // Old format: state.columns → migrate to tabs
+  if (st && st.columns && !st.tabs) {
+    st.tabs = [{ id: 'tab-1', name: 'Principal', columns: st.columns }];
+    st.activeTab = 0;
+    delete st.columns;
+  }
+  if (!st.tabs || !st.tabs.length) {
+    const def = getDefaultState();
+    st.tabs = def.tabs;
+    st.activeTab = 0;
+  }
+  if (typeof st.activeTab !== 'number') st.activeTab = 0;
+  if (st.activeTab >= st.tabs.length) st.activeTab = 0;
+  return st;
+}
+
+function getActiveColumns() {
+  return state.tabs[state.activeTab]?.columns || [];
 }
 
 // ── MODAL NOUVEAU TABLEAU ──
@@ -1773,8 +1820,11 @@ async function saveStateToFirebase() {
         updatedAt,
         kanban: state
       }, { merge: true });
-    // Mettre à jour la date locale
-    if (boardMeta) boardMeta.updatedAt = updatedAt;
+    // Mettre à jour le cache local pour les stats de la grille
+    if (boardMeta) {
+      boardMeta.updatedAt = updatedAt;
+      boardMeta.kanban = state; // Met à jour les stats en mémoire
+    }
   } catch (err) {
     console.error("Erreur de sauvegarde", err);
     toast("Erreur de sauvegarde !");
@@ -1823,6 +1873,10 @@ function redo() {
 }
 
 // Raccourcis clavier : Ctrl+Z (Undo) et Ctrl+Y (Redo)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMiniDialog();
+});
+
 window.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'z') {
     e.preventDefault();
@@ -1857,14 +1911,208 @@ let nextId = Date.now();
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
-function findCard(id){for(const col of state.columns){const c=col.cards.find(x=>x.id===id);if(c)return{card:c,col}}return null}
+function findCard(id){for(const col of getActiveColumns()){const c=col.cards.find(x=>x.id===id);if(c)return{card:c,col}}return null}
 
 function toast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
 
 
 
+// ══════════════════════════════════════════════
+//  TAB SYSTEM
+// ══════════════════════════════════════════════
+
+const TAB_GRADIENTS = [
+  'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  'linear-gradient(135deg,#f59e0b,#ef4444)',
+  'linear-gradient(135deg,#10b981,#059669)',
+  'linear-gradient(135deg,#ec4899,#a855f7)',
+  'linear-gradient(135deg,#14b8a6,#3b82f6)',
+  'linear-gradient(135deg,#f97316,#eab308)',
+  'linear-gradient(135deg,#06b6d4,#6366f1)',
+  'linear-gradient(135deg,#e11d48,#f97316)',
+  'linear-gradient(135deg,#84cc16,#14b8a6)',
+  'linear-gradient(135deg,#a855f7,#ec4899)',
+];
+
+// Gradient for a given tab index (cycles)
+function tabGradient(idx) {
+  return TAB_GRADIENTS[idx % TAB_GRADIENTS.length];
+}
+
+// Extract first color of a gradient for the dot
+function gradientStartColor(grad) {
+  const m = grad.match(/#[0-9a-f]{6}/i);
+  return m ? m[0] : '#6366f1';
+}
+
+function renderTabBar() {
+  const bar = document.getElementById('tabBar');
+  if (!bar) return;
+  if (!state.tabs || !state.tabs.length) return;
+  bar.innerHTML = '';
+  state.tabs.forEach((tab, idx) => {
+    const isActive = idx === state.activeTab;
+    const grad = tabGradient(idx);
+    const dotColor = gradientStartColor(grad);
+    const btn = document.createElement('div');
+    btn.className = 'tab-item' + (isActive ? ' active' : '');
+    btn.dataset.tabIdx = idx;
+    btn.innerHTML = `
+      ${isActive ? `<span class="tab-gradient" style="background:${grad}"></span>` : ''}
+      <span class="tab-dot" style="background:${isActive ? '#fff' : dotColor}"></span>
+      <span class="tab-label">${esc(tab.name)}</span>
+      <button class="tab-opts" onclick="openTabMenu(event,${idx})" title="Options">···</button>
+    `;
+    btn.addEventListener('click', e => {
+      if (e.target.closest('.tab-opts')) return;
+      switchTab(idx);
+    });
+    bar.appendChild(btn);
+  });
+}
+
+function switchTab(idx) {
+  if (idx === state.activeTab) return;
+  pushHistory();
+  state.activeTab = idx;
+  render();
+  saveStateToFirebase();
+}
+
+let tabNextId = 100;
+function addTab() {
+  pushHistory();
+  const idx = state.tabs.length;
+  state.tabs.push({
+    id: 'tab-' + (tabNextId++),
+    name: 'Onglet ' + (idx + 1),
+    columns: []
+  });
+  state.activeTab = state.tabs.length - 1;
+  render();
+  saveStateToFirebase();
+  // Immediately open rename
+  setTimeout(() => openTabRename(state.activeTab), 120);
+}
+
+// ── Tab context menu ──
+let ctxTabIdx = null;
+
+function openTabMenu(e, idx) {
+  e.stopPropagation();
+  ctxTabIdx = idx;
+  const tab = state.tabs[idx];
+  const cols = tab.columns || [];
+  const cards = cols.reduce((sum, c) => sum + (c.cards||[]).length, 0);
+  showCtx(e.clientX, e.clientY, `
+    <div style="padding:6px 10px 4px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${esc(tab.name)}</div>
+    <div style="padding:2px 10px 8px;font-size:11px;color:var(--text3)">${cols.length} listes · ${cards} cartes</div>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item" onclick="openTabRename(${idx})">✏️ Renommer</button>
+    <button class="ctx-item" onclick="duplicateTab(${idx})">⧉ Dupliquer</button>
+    <button class="ctx-item" onclick="moveTabLeft(${idx})" ${idx===0?'disabled style="opacity:.4"':''}>← Déplacer à gauche</button>
+    <button class="ctx-item" onclick="moveTabRight(${idx})" ${idx===state.tabs.length-1?'disabled style="opacity:.4"':''}>→ Déplacer à droite</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" onclick="deleteTab(${idx})" ${state.tabs.length<=1?'disabled style="opacity:.4"':''}>🗑 Supprimer l'onglet</button>
+  `);
+}
+
+function openTabRename(idx) {
+  hideCtx();
+  const tab = state.tabs[idx];
+  if (!tab) return;
+  showMiniDialog(`
+    <h3>Renommer l'onglet</h3>
+    <input id="mdInput" value="${esc(tab.name)}" onkeydown="if(event.key==='Enter')confirmTabRename(${idx});if(event.key==='Escape')closeMiniDialog()">
+    <div class="md-actions">
+      <button class="md-btn md-btn-ghost" onclick="closeMiniDialog()">Annuler</button>
+      <button class="md-btn md-btn-primary" onclick="confirmTabRename(${idx})">Renommer</button>
+    </div>
+  `);
+}
+
+function confirmTabRename(idx) {
+  const v = document.getElementById('mdInput')?.value.trim();
+  if (!v) { closeMiniDialog(); return; }
+  pushHistory();
+  state.tabs[idx].name = v;
+  render();
+  saveStateToFirebase();
+  closeMiniDialog();
+}
+
+function duplicateTab(idx) {
+  hideCtx();
+  pushHistory();
+  const clone = JSON.parse(JSON.stringify(state.tabs[idx]));
+  clone.id = 'tab-' + (tabNextId++);
+  clone.name += ' (copie)';
+  // Give new ids to all columns and cards to avoid conflicts
+  clone.columns.forEach(col => {
+    col.id = 'col-' + (nextId++);
+    col.cards.forEach(card => { card.id = 'c' + (nextId++); });
+  });
+  state.tabs.splice(idx + 1, 0, clone);
+  state.activeTab = idx + 1;
+  render();
+  saveStateToFirebase();
+  toast('Onglet dupliqué');
+}
+
+function moveTabLeft(idx) {
+  hideCtx();
+  if (idx === 0) return;
+  pushHistory();
+  const tmp = state.tabs[idx];
+  state.tabs[idx] = state.tabs[idx - 1];
+  state.tabs[idx - 1] = tmp;
+  if (state.activeTab === idx) state.activeTab = idx - 1;
+  else if (state.activeTab === idx - 1) state.activeTab = idx;
+  render();
+  saveStateToFirebase();
+}
+
+function moveTabRight(idx) {
+  hideCtx();
+  if (idx >= state.tabs.length - 1) return;
+  pushHistory();
+  const tmp = state.tabs[idx];
+  state.tabs[idx] = state.tabs[idx + 1];
+  state.tabs[idx + 1] = tmp;
+  if (state.activeTab === idx) state.activeTab = idx + 1;
+  else if (state.activeTab === idx + 1) state.activeTab = idx;
+  render();
+  saveStateToFirebase();
+}
+
+function deleteTab(idx) {
+  hideCtx();
+  if (state.tabs.length <= 1) { toast("Impossible de supprimer le dernier onglet"); return; }
+  const tab = state.tabs[idx];
+  const cols = tab.columns || [];
+  const cards = cols.reduce((sum, c) => sum + (c.cards||[]).length, 0);
+  showMiniDialog(`
+    <h3>Supprimer l'onglet ?</h3>
+    <p>« ${esc(tab.name)} » contient ${cols.length} listes et ${cards} cartes. Cette action est irréversible.</p>
+    <div class="md-actions">
+      <button class="md-btn md-btn-ghost" onclick="closeMiniDialog()">Annuler</button>
+      <button class="md-btn md-btn-danger" onclick="confirmDeleteTab(${idx})">Supprimer</button>
+    </div>
+  `);
+}
+
+function confirmDeleteTab(idx) {
+  closeMiniDialog();
+  pushHistory();
+  state.tabs.splice(idx, 1);
+  if (state.activeTab >= state.tabs.length) state.activeTab = state.tabs.length - 1;
+  render();
+  saveStateToFirebase();
+  toast('Onglet supprimé');
+}
+
+
 function render() {
-  // FORCE L'APPLICATION DU FOND SAUVEGARDÉ
   if (state.bg) {
     document.body.style.background = state.bg;
   } else {
@@ -1874,10 +2122,13 @@ function render() {
   const titleEl = document.getElementById('boardTitleDisplay');
   if (titleEl) titleEl.innerText = state.boardName || "Projet sans titre";
 
+  renderTabBar();
+
   const boardEl = document.getElementById('board');
   if (boardEl) {
     boardEl.innerHTML = '';
-    state.columns.forEach(col => boardEl.appendChild(makeCol(col)));
+    const cols = getActiveColumns();
+    cols.forEach(col => boardEl.appendChild(makeCol(col)));
     boardEl.appendChild(makeAddCol());
     initSortable();
   }
@@ -2200,8 +2451,8 @@ function initSortable() {
     onEnd: function (evt) { 
       pushHistory(); // On sauvegarde l'état AVANT de faire le changement
       if(evt.oldIndex === evt.newIndex) return; 
-      const movedCol = state.columns.splice(evt.oldIndex, 1)[0]; 
-      state.columns.splice(evt.newIndex, 0, movedCol); 
+      const cols=getActiveColumns(); const movedCol = cols.splice(evt.oldIndex, 1)[0]; 
+      cols.splice(evt.newIndex, 0, movedCol); 
       saveStateToFirebase(); 
     }
   });
@@ -2218,9 +2469,9 @@ function initSortable() {
 
         if(evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
 
-        const fromCol = state.columns.find(c => c.id === evt.from.dataset.colid);
+        const fromCol = getActiveColumns().find(c => c.id === evt.from.dataset.colid);
 
-        const toCol = state.columns.find(c => c.id === evt.to.dataset.colid);
+        const toCol = getActiveColumns().find(c => c.id === evt.to.dataset.colid);
 
         const cardId = evt.item.dataset.cardId; const cardObj = fromCol.cards.find(c => c.id === cardId);
 
@@ -2242,7 +2493,7 @@ function initSortable() {
 
 
 
-function updateColCounts() { state.columns.forEach(col => { const colEl = document.querySelector(`.column[data-col-id="${col.id}"]`); if(colEl) { colEl.querySelectorAll('.col-count, .col-collapsed-count').forEach(el => el.textContent = col.cards.length); } }); }
+function updateColCounts() { getActiveColumns().forEach(col => { const colEl = document.querySelector(`.column[data-col-id="${col.id}"]`); if(colEl) { colEl.querySelectorAll('.col-count, .col-collapsed-count').forEach(el => el.textContent = col.cards.length); } }); }
 
 
 
@@ -2262,9 +2513,9 @@ function initPan() {
 
 
 
-function renameCol(id,v){const c=state.columns.find(c=>c.id===id);if(c){c.title=v; saveStateToFirebase();}}
+function renameCol(id,v){const c=getActiveColumns().find(c=>c.id===id);if(c){c.title=v; saveStateToFirebase();}}
 
-function toggleCollapse(id){const c=state.columns.find(c=>c.id===id);if(c){c.collapsed=!c.collapsed;render(); saveStateToFirebase();}}
+function toggleCollapse(id){const c=getActiveColumns().find(c=>c.id===id);if(c){c.collapsed=!c.collapsed;render(); saveStateToFirebase();}}
 
 function openAddCol(){document.getElementById('addColBtn').style.display='none';document.getElementById('newColForm').classList.add('active');document.getElementById('newColInput').focus()}
 
@@ -2280,7 +2531,7 @@ function confirmAddCol(){
 
   const pal=['#6366f1','#f59e0b','#ef4444','#10b981','#ec4899','#14b8a6'];
 
-  state.columns.push({id:`col-${nextId++}`,title,color:pal[state.columns.length%pal.length],collapsed:false,cards:[]});
+  getActiveColumns().push({id:`col-${nextId++}`,title,color:pal[getActiveColumns().length%pal.length],collapsed:false,cards:[]});
 
   cancelAddCol();render();toast('Liste créée'); saveStateToFirebase();
 
@@ -2303,13 +2554,13 @@ function confirmAddCard(colId){
     return;
   };
 
-  state.columns.find(c=>c.id===colId).cards.push({id:`c${nextId++}`,title,done:false,checks:[],desc:''});
+  getActiveColumns().find(c=>c.id===colId).cards.push({id:`c${nextId++}`,title,done:false,checks:[],desc:''});
 
   cancelAddCard(colId);render();toast('Carte ajoutée'); saveStateToFirebase();
 
 }
 
-function addCardAt(colId, index) { state.columns.find(c => c.id === colId).cards.splice(index, 0, { id:`c${nextId++}`, title:'', done:false, checks:[], desc:'', inlineEdit: true }); render(); }
+function addCardAt(colId, index) { getActiveColumns().find(c => c.id === colId).cards.splice(index, 0, { id:`c${nextId++}`, title:'', done:false, checks:[], desc:'', inlineEdit: true }); render(); }
 
 
 
@@ -2323,7 +2574,7 @@ function openColMenu(e,colId){
 
   e.stopPropagation();ctxColId=colId;ctxCardId=null;
 
-  const col=state.columns.find(c=>c.id===colId);
+  const col=getActiveColumns().find(c=>c.id===colId);
 
   const colorGrid = `<div class="ctx-colors">` + COL_COLORS.map(c => `<div class="ctx-color-dot ${col.color===c?'active':''}" style="background:${c}" onclick="event.stopPropagation(); setColColor('${colId}', '${c}')"></div>`).join('') + `</div>`;
 
@@ -2345,7 +2596,7 @@ function openColMenu(e,colId){
 
 }
 
-function setColColor(colId, hex) { pushHistory(); col = state.columns.find(c => c.id === colId); if(col) col.color = hex; hideCtx(); render(); saveStateToFirebase(); }
+function setColColor(colId, hex) { pushHistory(); col = getActiveColumns().find(c => c.id === colId); if(col) col.color = hex; hideCtx(); render(); saveStateToFirebase(); }
 
 
 
@@ -2373,7 +2624,7 @@ function hideCtx(){document.getElementById('ctxMenu').classList.remove('active')
 
 document.addEventListener('click', e => { hideCtx(); if (!e.target.closest('.bg-panel') && !e.target.closest('.bg-fab')) { document.getElementById('bgPanel')?.classList.remove('open'); } });
 
-/* function ctxRenameCol(){hideCtx();const c=state.columns.find(c=>c.id===ctxColId);if(!c)return;const n=prompt('Nouveau nom :',c.title);if(n?.trim()){c.title=n.trim();render();saveStateToFirebase();}}
+/* function ctxRenameCol(){hideCtx();const c=getActiveColumns().find(c=>c.id===ctxColId);if(!c)return;const n=prompt('Nouveau nom :',c.title);if(n?.trim()){c.title=n.trim();render();saveStateToFirebase();}}
  */
 function ctxRenameCol() {
   hideCtx();
@@ -2415,13 +2666,13 @@ function ctxRenameCol() {
   }
 }
 
-function ctxClearCol(){pushHistory();const c=state.columns.find(c=>c.id===ctxColId);if(c){c.cards=[];render();toast('Liste vidée');saveStateToFirebase();}}
+function ctxClearCol(){pushHistory();const c=getActiveColumns().find(c=>c.id===ctxColId);if(c){c.cards=[];render();toast('Liste vidée');saveStateToFirebase();}}
 
 function ctxColCollapse(){hideCtx();toggleCollapse(ctxColId)}
 
-function ctxDelCol(){pushHistory();const i=state.columns.findIndex(c=>c.id===ctxColId);if(i>-1){state.columns.splice(i,1);render();toast('Liste supprimée');saveStateToFirebase();}}
+function ctxDelCol(){pushHistory();const cols=getActiveColumns();const i=cols.findIndex(c=>c.id===ctxColId);if(i>-1){cols.splice(i,1);render();toast('Liste supprimée');saveStateToFirebase();}}
 
-function ctxDupCard(){hideCtx();const col=state.columns.find(c=>c.id===ctxCardColId);if(!col)return;const i=col.cards.findIndex(c=>c.id===ctxCardId);if(i===-1)return;const cl=JSON.parse(JSON.stringify(col.cards[i]));cl.id=`c${nextId++}`;cl.title+=' (copie)';col.cards.splice(i+1,0,cl);render();toast('Carte dupliquée');saveStateToFirebase();}
+function ctxDupCard(){hideCtx();const col=getActiveColumns().find(c=>c.id===ctxCardColId);if(!col)return;const i=col.cards.findIndex(c=>c.id===ctxCardId);if(i===-1)return;const cl=JSON.parse(JSON.stringify(col.cards[i]));cl.id=`c${nextId++}`;cl.title+=' (copie)';col.cards.splice(i+1,0,cl);render();toast('Carte dupliquée');saveStateToFirebase();}
 
 
 
@@ -2514,6 +2765,19 @@ function updateBoardName(el) {
 function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
 function closeBoardActionModal(e){
   if(e && e.target !== document.getElementById('boardActionModal')) return;
+  document.getElementById('boardActionModal').classList.remove('open');
+}
+
+// Alias for tab system (reuses boardActionModal)
+function showMiniDialog(html) {
+  document.getElementById('boardActionContent').innerHTML = html;
+  document.getElementById('boardActionModal').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('boardActionModal').querySelector('input');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 60);
+}
+function closeMiniDialog() {
   document.getElementById('boardActionModal').classList.remove('open');
 }
 
