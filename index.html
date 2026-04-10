@@ -121,9 +121,9 @@ header {
   align-items: center; 
   justify-content: flex-start;
   padding: 0 24px; 
-  background: #14b8a6; /* Un peu plus clair pour bien la voir */
+  /* background set dynamically by renderTabBar */
   border-bottom: 1px solid var(--col-border);
-  height: 60px;
+  height: 48px;
   position: relative; /* Pour s'assurer qu'elle suit le flux normal */
   z-index: 10;
 }
@@ -1083,7 +1083,7 @@ body.on-board #boards-screen { display: none; }
 .tab-bar::-webkit-scrollbar{display:none}
 .tab-item{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:var(--bg3);color:var(--text2);white-space:nowrap;transition:all .15s;position:relative;flex-shrink:0;font-family:'DM Sans',sans-serif}
 .tab-item:hover{color:var(--text);background:rgba(255,255,255,.08)}
-.tab-item.active{color:#fff;background:none}
+.tab-item.active{color:#fff;}
 .tab-item.active .tab-gradient{position:absolute;inset:0;border-radius:8px;z-index:-1;opacity:.9}
 .tab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:transform .15s}
 .tab-item:hover .tab-dot{transform:scale(1.3)}
@@ -1163,7 +1163,7 @@ body.on-board #boards-screen { display: none; }
   </div>
 </header>
 
-<div class="project-bar">
+<div class="project-bar" id="projectBar">
   <span id="boardTitleDisplay" style="cursor:default"></span>
   <div class="tab-bar" id="tabBar"></div>
   <button class="tab-add" onclick="addTab()">
@@ -1432,8 +1432,8 @@ function showBoardsScreen(active) {
     if (bw) bw.style.display = 'none';
     if (pb) pb.style.display = 'none';
     
-    // Application du fond sur l'écran de sélection
-    document.body.style.background = state.bg || 'var(--bg)';
+    // Restore clean bg (remove gradient tint) for the boards grid
+    document.body.style.background = state.bg || '#0f1117';
     currentBoardId = null;
   } else {
     bs.classList.remove('active');
@@ -1696,7 +1696,7 @@ async function openBoard(boardId) {
     }
 
     currentBoardId = boardId;
-    if (state.bg) document.body.style.background = state.bg;
+    // bg set by renderTabBar during render()
     initBoardName();
     showBoardsScreen(false);
     render();
@@ -1708,10 +1708,16 @@ async function openBoard(boardId) {
 
 function goToBoardsList() {
   if (currentBoardId) {
-    saveStateToFirebase().then(() => {
-      showBoardsScreen(true);
-      loadBoardsList(); // Recharge depuis Firebase pour avoir les stats à jour
-    });
+    // Update local cache immediately so stats show right away
+    const bm = boardsList.find(b => b.id === currentBoardId);
+    if (bm) bm.kanban = JSON.parse(JSON.stringify(state));
+    // Reset bg before showing the grid
+    document.body.style.background = state.bg || 'var(--bg)';
+    const pb = document.querySelector('.project-bar');
+    if (pb) pb.style.background = '';
+    showBoardsScreen(true);
+    renderBoardsGrid();          // instant render with local data
+    saveStateToFirebase().then(() => loadBoardsList()); // then sync Firebase
   } else {
     showBoardsScreen(true);
     loadBoardsList();
@@ -1823,7 +1829,7 @@ async function saveStateToFirebase() {
     // Mettre à jour le cache local pour les stats de la grille
     if (boardMeta) {
       boardMeta.updatedAt = updatedAt;
-      boardMeta.kanban = state; // Met à jour les stats en mémoire
+      boardMeta.kanban = JSON.parse(JSON.stringify(state)); // deep copy
     }
   } catch (err) {
     console.error("Erreur de sauvegarde", err);
@@ -1947,27 +1953,71 @@ function gradientStartColor(grad) {
 
 function renderTabBar() {
   const bar = document.getElementById('tabBar');
+  const pb  = document.getElementById('projectBar');
   if (!bar) return;
   if (!state.tabs || !state.tabs.length) return;
+
+  // ── Active tab gradient ──
+  const activeGrad = tabGradient(state.activeTab);
+  const hex = activeGrad.match(/#[0-9a-fA-F]{6}/g) || [];
+  const c1 = hex[0] || '#6366f1';
+  const c2 = hex[1] || c1;
+
+  // ── Project-bar: couleur unie (plus de gradient ici) ──
+  if (pb) {
+    pb.style.background = 'var(--bg2)';
+    pb.style.borderBottom = '1px solid var(--col-border)';
+  }
+
+  // ── Board-wrap: full gradient du tab actif ──
+  const onBoards = document.getElementById('boards-screen')?.classList.contains('active');
+  if (!onBoards) {
+    // Appliquer le gradient du tab actif au board-wrap
+    const boardWrap = document.querySelector('.board-wrap');
+    if (boardWrap) {
+      boardWrap.style.background = activeGrad;
+    }
+  }
+
+  // ── Render tab items avec compteur de tâches ──
   bar.innerHTML = '';
   state.tabs.forEach((tab, idx) => {
     const isActive = idx === state.activeTab;
-    const grad = tabGradient(idx);
-    const dotColor = gradientStartColor(grad);
-    const btn = document.createElement('div');
-    btn.className = 'tab-item' + (isActive ? ' active' : '');
-    btn.dataset.tabIdx = idx;
-    btn.innerHTML = `
-      ${isActive ? `<span class="tab-gradient" style="background:${grad}"></span>` : ''}
-      <span class="tab-dot" style="background:${isActive ? '#fff' : dotColor}"></span>
-      <span class="tab-label">${esc(tab.name)}</span>
-      <button class="tab-opts" onclick="openTabMenu(event,${idx})" title="Options">···</button>
-    `;
-    btn.addEventListener('click', e => {
+    const g  = tabGradient(idx);
+    const gh = g.match(/#[0-9a-fA-F]{6}/g) || ['#6366f1'];
+    const dot = gh[0];
+
+    // Compter le nombre de tâches dans cet onglet
+    let taskCount = 0;
+    if (tab.columns) {
+      tab.columns.forEach(col => {
+        if (col.cards) {
+          col.cards.forEach(card => {
+            // Compter les checks ou la carte elle-même comme 1 tâche
+            taskCount += (card.checks && card.checks.length > 0) ? card.checks.length : 1;
+          });
+        }
+      });
+    }
+
+    const div = document.createElement('div');
+    div.className = 'tab-item' + (isActive ? ' active' : '');
+    // Apply gradient background directly on the active tab element
+    if (isActive) {
+      div.style.background = 'linear-gradient(135deg,' + gh[0] + ',' + (gh[1]||gh[0]) + ')';
+      div.style.boxShadow = '0 2px 10px ' + gh[0] + '66';
+      div.style.color = '#fff';
+    }
+    div.innerHTML =
+      '<span class="tab-dot" style="background:' + (isActive ? 'rgba(255,255,255,.9)' : dot) + ';width:8px;height:8px;border-radius:50%;flex-shrink:0"></span>' +
+      '<span class="tab-label">' + esc(tab.name) + '</span>' +
+      '<span class="tab-count" style="font-size:12px;padding:2px 6px;background:rgba(0,0,0,.2);border-radius:4px;margin-left:4px;min-width:24px;text-align:center">' + taskCount + '</span>' +
+      '<button class="tab-opts" onclick="openTabMenu(event,' + idx + ')" title="Options">···</button>';
+    div.addEventListener('click', e => {
       if (e.target.closest('.tab-opts')) return;
       switchTab(idx);
     });
-    bar.appendChild(btn);
+    bar.appendChild(div);
   });
 }
 
@@ -2113,11 +2163,7 @@ function confirmDeleteTab(idx) {
 
 
 function render() {
-  if (state.bg) {
-    document.body.style.background = state.bg;
-  } else {
-    document.body.style.background = 'var(--bg)';
-  }
+  // Body bg is set by renderTabBar below (gradient based on active tab)
 
   const titleEl = document.getElementById('boardTitleDisplay');
   if (titleEl) titleEl.innerText = state.boardName || "Projet sans titre";
