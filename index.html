@@ -1602,9 +1602,9 @@
     }
 
     .boards-sidebar {
-      width: 200px;
+      width: 180px;
       flex-shrink: 0;
-      background: #f0f1f4;
+      background: var(--bg3);
       border-radius: 10px;
       padding: 8px;
       display: flex;
@@ -1622,10 +1622,10 @@
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       transition: all 0.2s;
       border: none;
-      background: var(--card-bg);
+      background: var(--col-bg);
       color: var(--text2);
       white-space: nowrap;
       overflow: hidden;
@@ -1634,8 +1634,9 @@
     }
 
     .boards-sidebar-item:hover:not(.active) {
-      background: linear-gradient(135deg, rgba(102,126,234,0.3) 0%, rgba(118,75,162,0.3) 100%);
+      background: var(--col-bg);
       color: var(--text);
+      opacity: 0.8;
     }
 
     .boards-sidebar-item.active {
@@ -1644,21 +1645,22 @@
     }
 
     .boards-sidebar-item-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
     .boards-main {
-      flex: 0 0 auto;
-      background: var(--card-bg);
-      border: 1px solid var(--col-border);
-      border-radius: 10px;
-      padding: 16px;
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
       display: flex;
-      flex-direction: column;
-      height: fit-content;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
     }
 
     .boards-main-empty {
@@ -1675,15 +1677,13 @@
       grid-template-columns: 1fr auto;
       gap: 12px;
       align-items: start;
-      margin-bottom: 0;
-      max-height: 70px;
-      overflow: hidden;
+      margin-bottom: 16px;
     }
 
     .boards-main-info {
       display: grid;
-      grid-template-columns: 40px 1fr;
-      gap: 10px;
+      grid-template-columns: 60px 1fr;
+      gap: 12px;
       align-items: start;
       overflow: hidden;
       min-width: 0;
@@ -1695,15 +1695,15 @@
     }
 
     .boards-main-icon {
-      width: 40px;
-      height: 40px;
+      width: 60px;
+      height: 60px;
       border-radius: 8px;
       flex-shrink: 0;
       grid-row: 1 / 3;
     }
 
     .boards-main-title {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 600;
       color: var(--text);
       margin: 0;
@@ -1718,7 +1718,6 @@
       color: var(--text3);
       flex-wrap: wrap;
       overflow: hidden;
-      max-height: 20px;
     }
 
     .boards-main-meta-item {
@@ -1729,43 +1728,64 @@
     }
 
     .boards-main-desc {
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text2);
-      line-height: 1.3;
+      line-height: 1.5;
       grid-column: 2;
-      margin-top: 2px;
-      white-space: nowrap;
+      margin-top: 12px;
       overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
+      max-height: 60px;
+      word-wrap: break-word;
+      white-space: normal;
     }
 
     .boards-main-stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-top: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--col-border);
     }
 
     .boards-main-stat {
-      background: var(--bg3);
-      padding: 8px;
-      border-radius: 6px;
-      text-align: center;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      text-align: left;
     }
 
     .boards-main-stat-label {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--text3);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 2px;
+      margin-bottom: 6px;
     }
 
     .boards-main-stat-value {
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 600;
       color: var(--accent);
+    }
+
+    /* Conteneur principal de la grande fiche */
+    .boards-card-wrapper {
+      background: var(--card-bg);
+      border: 1px solid var(--col-border);
+      border-radius: 10px;
+      padding: 32px;
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .boards-card-wrapper:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
 
     /* Conteneur du bas de la carte */
@@ -2509,8 +2529,9 @@
       <input class="nb-input" id="nbProjectName" placeholder="Nom du projet…" type="text">
 
       <label class="nb-form-label">Description <span style="color:var(--red)">*</span></label>
-      <textarea class="nb-input nb-textarea" id="nbDescription"
+      <textarea class="nb-input nb-textarea" id="nbDescription" maxlength="60" oninput="updateCharCounter('nbDescription', 'nbCounter')"
         placeholder="Décrivez votre projet en quelques mots…"></textarea>
+      <div id="nbCounter" style="font-size: 12px; color: var(--text3); text-align: right; margin-top: 4px;">0/60</div>
 
       <div class="nb-actions">
         <button class="nb-cancel" onclick="closeNewBoardModal()">Annuler</button>
@@ -2868,22 +2889,17 @@
 
       const grad = TAB_GRADIENTS[idx % TAB_GRADIENTS.length];
       
-      // Formater la date et heure
       let lastOpenedTxt = 'Jamais ouvert';
       if (project.lastOpened) {
         let date;
-        // Gérer les deux formats : Timestamp Firebase ou Date
         if (project.lastOpened.toDate) {
-          // Firebase Timestamp
           date = project.lastOpened.toDate();
         } else if (project.lastOpened instanceof Date) {
           date = project.lastOpened;
         } else {
-          // String ou nombre
           date = new Date(project.lastOpened);
         }
         
-        // Vérifier que la date est valide
         if (!isNaN(date.getTime())) {
           const today = new Date();
           const isToday = date.toDateString() === today.toDateString();
@@ -2901,7 +2917,11 @@
         }
       }
 
-      main.innerHTML = `
+      const wrapper = document.createElement('div');
+      wrapper.className = 'boards-card-wrapper';
+      wrapper.setAttribute('data-board-id', project.id);
+
+      wrapper.innerHTML = `
         <div class="boards-main-header">
           <div class="boards-main-info">
             <div class="boards-main-icon" style="background:${grad}"></div>
@@ -2912,7 +2932,7 @@
                 <span class="boards-main-meta-item">${nbListes} liste${nbListes > 1 ? 's' : ''}</span>
                 <span class="boards-main-meta-item">${lastOpenedTxt}</span>
               </div>
-              ${project.description ? `<div class="boards-main-desc">${esc(project.description.substring(0, 60))}${project.description.length > 60 ? '...' : ''}</div>` : ''}
+              ${project.description ? `<div class="boards-main-desc">${esc(project.description)}</div>` : ''}
             </div>
           </div>
           <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
@@ -2938,9 +2958,10 @@
         </div>
       `;
 
-      // Ajouter le listener pour ouvrir le projet
-      main.style.cursor = 'pointer';
-      main.onclick = () => openBoard(project.id);
+      wrapper.style.cursor = 'pointer';
+      wrapper.onclick = () => openBoard(project.id);
+      main.innerHTML = '';  // ✅ Vide complètement
+      main.appendChild(wrapper);
     }
     // Menu contextuel pour les cartes de l'accueil
     function openBoardCtx(e, boardId) {
@@ -2998,7 +3019,8 @@
       if (!b) return;
       document.getElementById('boardActionContent').innerHTML = `
     <div class="modal-label" style="margin-bottom:12px;">Modifier la description</div>
-    <textarea id="editBoardDescInput" class="nb-input nb-textarea" style="width:100%; margin-bottom:20px; min-height:100px;">${esc(b.description || '')}</textarea>
+    <textarea id="editBoardDescInput" class="nb-input nb-textarea" maxlength="60" oninput="updateCharCounter('editBoardDescInput', 'editDescCounter')" style="width:100%; margin-bottom:8px; min-height:100px;">${esc(b.description || '')}</textarea>
+    <div id="editDescCounter" style="font-size: 12px; color: var(--text3); text-align: right; margin-bottom:20px;">${(b.description || '').length}/60</div>
     <div style="display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn-secondary" onclick="closeBoardActionModal()">Annuler</button>
       <button class="btn-primary" onclick="executeEditDescBoard('${id}')">Enregistrer</button>
@@ -3203,6 +3225,14 @@
 
     function closeNewBoardModal() {
       document.getElementById('newBoardModal').classList.remove('active');
+    }
+
+    function updateCharCounter(inputId, counterId) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+      if (input && counter) {
+        counter.textContent = `${input.value.length}/60`;
+      }
     }
 
     async function confirmCreateBoard() {
