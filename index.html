@@ -1525,7 +1525,33 @@
       box-shadow: 0 0 0 2px var(--accent)
     }
 
+    .bp-images-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 4px
+    }
 
+    .bp-image-item {
+      height: 120px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 2.5px solid transparent;
+      transition: all .14s;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .3)
+    }
+
+    .bp-image-item:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .5)
+    }
+
+    .bp-image-item.active {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px var(--accent), 0 4px 12px rgba(0, 0, 0, .5)
+    }
 
     .bp-custom {
       display: flex;
@@ -2475,7 +2501,7 @@
 
     <div class="header-actions">
       <div class="user-profile-wrap" onclick="toggleProfileMenu(event)">
-        <img id="userImg" src="" alt="Profile" class="user-avatar" style="display:none;">
+        <img id="userImg" src="banana.jpg" alt="Profile" class="user-avatar" style="display:none;">
         <div id="profileDropdown" class="profile-dropdown">
           <button id="bg-option" class="dropdown-item" onclick="toggleBgPanel()">
             <span>🎨</span> Modifier le thème
@@ -2583,6 +2609,8 @@
       <button class="bp-tab active" id="tab-colors" onclick="switchBpTab('colors')">Couleurs</button>
 
       <button class="bp-tab" id="tab-gradients" onclick="switchBpTab('gradients')">Dégradés</button>
+
+      <button class="bp-tab" id="tab-images" onclick="switchBpTab('images')">Images</button>
 
     </div>
 
@@ -4366,11 +4394,25 @@ function renderTabBar() {
 
         BP_COLORS.forEach(c => { const s = document.createElement('div'); s.className = 'bp-swatch'; s.style.background = c; s.addEventListener('click', () => applyBg(c, 'solid', s)); document.getElementById('bpGrid').appendChild(s); });
 
-      } else {
+      } else if (currentBpTab === 'gradients') {
 
         body.innerHTML = '<div class="bp-grad-grid" id="bpGGrid"></div>';
 
         BP_GRADS.forEach(g => { const s = document.createElement('div'); s.className = 'bp-grad'; s.style.background = g; s.addEventListener('click', () => applyBg(g, 'gradient', s)); document.getElementById('bpGGrid').appendChild(s); });
+
+      } else if (currentBpTab === 'images') {
+
+        body.innerHTML = '<div class="bp-images-grid" id="bpImagesGrid"></div>';
+
+        // Add banana image wallpaper
+        const bananaImg = document.createElement('div');
+        bananaImg.className = 'bp-image-item';
+        bananaImg.style.backgroundImage = 'url(banana.jpg)';
+        bananaImg.style.backgroundSize = 'cover';
+        bananaImg.style.backgroundPosition = 'center';
+        bananaImg.title = 'Bananas Pattern';
+        bananaImg.addEventListener('click', () => applyBg('url(banana.jpg)', 'image', bananaImg));
+        document.getElementById('bpImagesGrid').appendChild(bananaImg);
 
       }
 
