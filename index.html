@@ -1675,15 +1675,16 @@
     .boards-main-header {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 12px;
+      gap: 6px;
       align-items: start;
-      margin-bottom: 16px;
+      margin-bottom: 4px;
+      flex-shrink: 0;
     }
 
     .boards-main-info {
       display: grid;
-      grid-template-columns: 60px 1fr;
-      gap: 12px;
+      grid-template-columns: 44px 1fr;
+      gap: 6px;
       align-items: start;
       overflow: hidden;
       min-width: 0;
@@ -1695,25 +1696,25 @@
     }
 
     .boards-main-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
       flex-shrink: 0;
       grid-row: 1 / 3;
     }
 
     .boards-main-title {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text);
       margin: 0;
       padding: 0;
-      line-height: 1.2;
+      line-height: 1.1;
     }
 
     .boards-main-meta {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       font-size: 11px;
       color: var(--text3);
       flex-wrap: wrap;
@@ -1722,19 +1723,18 @@
 
     .boards-main-meta-item {
       background: var(--bg3);
-      padding: 2px 8px;
-      border-radius: 4px;
+      padding: 2px 6px;
+      border-radius: 3px;
       white-space: nowrap;
     }
 
     .boards-main-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text2);
-      line-height: 1.5;
-      grid-column: 2;
-      margin-top: 12px;
-      overflow: hidden;
-      max-height: 60px;
+      line-height: 1.3;
+      margin: 0;
+      overflow-y: auto;
+      max-height: 40px;
       word-wrap: break-word;
       white-space: normal;
     }
@@ -1742,10 +1742,12 @@
     .boards-main-stats {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--col-border);
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 0.5px solid var(--col-border);
+      flex-shrink: 0;
+      margin-top: auto;
     }
 
     .boards-main-stat {
@@ -1756,15 +1758,15 @@
     }
 
     .boards-main-stat-label {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text3);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 6px;
+      margin-bottom: 1px;
     }
 
     .boards-main-stat-value {
-      font-size: 20px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--accent);
     }
@@ -1774,9 +1776,10 @@
       background: var(--card-bg);
       border: 1px solid var(--col-border);
       border-radius: 10px;
-      padding: 32px;
+      padding: 12px;
       width: 100%;
-      max-width: 600px;
+      max-width: 500px;
+      height: 280px;
       display: flex;
       flex-direction: column;
       cursor: pointer;
@@ -2932,11 +2935,16 @@
                 <span class="boards-main-meta-item">${nbListes} liste${nbListes > 1 ? 's' : ''}</span>
                 <span class="boards-main-meta-item">${lastOpenedTxt}</span>
               </div>
-              ${project.description ? `<div class="boards-main-desc">${esc(project.description)}</div>` : ''}
             </div>
           </div>
           <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
         </div>
+
+        ${project.description ? `
+        <div style="border-top: 0.5px solid var(--col-border); padding-top: 8px; margin-top: 8px; margin-bottom: 8px;">
+          <div class="boards-main-desc">${esc(project.description)}</div>
+        </div>
+        ` : ''}
 
         <div class="boards-main-stats">
           <div class="boards-main-stat">
