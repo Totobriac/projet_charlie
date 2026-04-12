@@ -108,8 +108,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 24px;
-      background: var(--bg2);
-      /* Suppression du dégradé pour une couleur unie */
+      background: #f8f9fa;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -160,7 +159,7 @@
       align-items: center;
       justify-content: flex-start;
       padding: 0 24px;
-      background: #d9dce1;
+      background: #f0f1f4;
       position: relative;
       z-index: 10;
     }
@@ -172,7 +171,7 @@
       cursor: text;
       display: inline-block;
       min-width: 50px;
-      background: #d9dce1;
+      background: #f0f1f4;
     }
 
     #boardTitleDisplay:hover {
@@ -1573,8 +1572,8 @@
     #boards-screen {
       display: none;
       min-height: calc(100vh - 57px);
-      padding: 40px 32px;
-      max-width: 1100px;
+      padding: 24px 24px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
@@ -1584,22 +1583,189 @@
 
     .boards-screen-title {
       font-family: 'Fraunces', serif;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .boards-screen-sub {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text2);
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
 
-    .boards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    .boards-layout {
+      display: flex;
       gap: 16px;
+      min-height: 500px;
+    }
+
+    .boards-sidebar {
+      width: 200px;
+      flex-shrink: 0;
+      background: #f0f1f4;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      max-height: calc(100vh - 150px);
+    }
+
+    .boards-sidebar-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+      border: none;
+      background: var(--card-bg);
+      color: var(--text2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+    }
+
+    .boards-sidebar-item:hover:not(.active) {
+      background: linear-gradient(135deg, rgba(102,126,234,0.3) 0%, rgba(118,75,162,0.3) 100%);
+      color: var(--text);
+    }
+
+    .boards-sidebar-item.active {
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .boards-sidebar-item-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .boards-main {
+      flex: 0 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--col-border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+    }
+
+    .boards-main-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      color: var(--text3);
+      font-size: 13px;
+    }
+
+    .boards-main-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 0;
+      max-height: 70px;
+      overflow: hidden;
+    }
+
+    .boards-main-info {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 10px;
+      align-items: start;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .boards-main-info > div {
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .boards-main-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      grid-row: 1 / 3;
+    }
+
+    .boards-main-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.2;
+    }
+
+    .boards-main-meta {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text3);
+      flex-wrap: wrap;
+      overflow: hidden;
+      max-height: 20px;
+    }
+
+    .boards-main-meta-item {
+      background: var(--bg3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .boards-main-desc {
+      font-size: 11px;
+      color: var(--text2);
+      line-height: 1.3;
+      grid-column: 2;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .boards-main-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .boards-main-stat {
+      background: var(--bg3);
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .boards-main-stat-label {
+      font-size: 9px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .boards-main-stat-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
     }
 
     /* Conteneur du bas de la carte */
@@ -2032,7 +2198,7 @@
       scrollbar-width: none;
       flex: 1;
       min-width: 0;
-      background: #d9dce1; /* Gris moderne plus clair */
+      background: #f0f1f4;
    
     }
 
@@ -2042,19 +2208,17 @@
 
     .tab-item {
       width: 160px;
-      /* Fixé à 160px selon ton souhait */
       height: 40px;
       display: flex;
       align-items: center;
       padding: 0 8px 0 12px;
       cursor: pointer;
       border-radius: 6px 6px 0 0;
-      background: #e8eaed; /* Blanc/clair moderne */
-      color: #1a1f2e; /* Texte sombre pour être lisible */
+      background: #e8eaee;
+      color: #1a1f2e;
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
-      /* Important pour l'effet de disparition */
     }
 
     /* On force le compteur et les options à rester collés à droite */
@@ -2145,7 +2309,7 @@
       font-weight: 500;
       cursor: pointer;
       border: 1px dashed #bbb;
-      background: #e8eaed;
+      background: #e8eaee;
       color: #666666;
       white-space: nowrap;
       flex-shrink: 0;
@@ -2165,18 +2329,19 @@
       gap: 0;
       padding: 0 8px;
       min-height: 40px;
-      background: #d9dce1
+      background: #f0f1f4
     }
 
     #boardTitleDisplay {
       padding: 0 12px 0 4px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--text2);
+      color: #333333;
       white-space: nowrap;
       flex-shrink: 0;
       border-right: 1px solid var(--col-border);
-      margin-right: 8px
+      margin-right: 8px;
+      background: #f0f1f4
     }
 
     /* ── MINI DIALOG BUTTONS (used by tab dialogs) ── */
@@ -2320,7 +2485,10 @@
   <div id="boards-screen">
     <div class="boards-screen-title">Mes tableaux 🐒</div>
     <div class="boards-screen-sub">Choisissez un tableau ou créez-en un nouveau.</div>
-    <div class="boards-grid" id="boardsGrid"></div>
+    <div class="boards-layout">
+      <div class="boards-sidebar" id="boardsSidebar"></div>
+      <div class="boards-main" id="boardsMain"></div>
+    </div>
   </div>
 
   <!-- MODAL CRÉATION D'UN NOUVEAU TABLEAU -->
@@ -2591,79 +2759,188 @@
     }
 
     function renderBoardsGrid() {
-      const grid = document.getElementById('boardsGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
+      const sidebar = document.getElementById('boardsSidebar');
+      const main = document.getElementById('boardsMain');
+      if (!sidebar || !main) return;
 
-      // 1. Bouton "Nouveau" (Toujours visible)
-      const newCard = document.createElement('div');
-      newCard.className = 'board-card board-card-new';
-      newCard.innerHTML = `<div class="board-card-new-icon" style="background:var(--bg3); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">+</div><span style="color:var(--text2)">Nouveau tableau</span>`;
-      newCard.onclick = openNewBoardModal;
-      grid.appendChild(newCard);
+      sidebar.innerHTML = '';
+      main.innerHTML = '';
 
-      if (!boardsList || boardsList.length === 0) return;
+      // Bouton "Nouveau tableau" en haut du sidebar
+      const newBtn = document.createElement('button');
+      newBtn.className = 'boards-sidebar-item';
+      newBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      newBtn.style.color = '#fff';
+      newBtn.innerHTML = '<span style="font-size:16px">+</span> Nouveau';
+      newBtn.onclick = openNewBoardModal;
+      sidebar.appendChild(newBtn);
 
-      // 2. Génération des cartes de projets
-      boardsList.forEach(project => {
-        // Sécurité : on initialise des valeurs par défaut
-        const kanbanData = project.kanban || {};
-        // Support both old (columns) and new (tabs) format
-        const allCols = kanbanData.tabs
-          ? kanbanData.tabs.flatMap(t => t.columns || [])
-          : (kanbanData.columns || []);
-        const nbListes = allCols.length;
-        const nbOnglets = kanbanData.tabs ? kanbanData.tabs.length : 1;
+      // Ligne de séparation
+      const sep = document.createElement('div');
+      sep.style.height = '1px';
+      sep.style.background = 'var(--col-border)';
+      sep.style.margin = '4px 0';
+      sidebar.appendChild(sep);
 
-        let totalTaches = 0;
-        let finies = 0;
+      if (!boardsList || boardsList.length === 0) {
+        main.innerHTML = '<div class="boards-main-empty">Aucun tableau. Créez-en un pour commencer ! 🎯</div>';
+        return;
+      }
 
-        allCols.forEach(col => {
-          const cards = col.cards || [];
-          totalTaches += cards.length;
-          const titleLower = (col.title || '').toLowerCase();
-          if (titleLower.includes('fini') || titleLower.includes('terminé') || titleLower.includes('done')) {
-            finies += cards.length;
+      // Ajouter les items du sidebar
+      boardsList.forEach((project, idx) => {
+        const item = document.createElement('button');
+        item.className = 'boards-sidebar-item' + (idx === 0 ? ' active' : '');
+        const grad = TAB_GRADIENTS[idx % TAB_GRADIENTS.length];
+        const gradMatch = grad.match(/#[0-9a-f]{6}/i);
+        const gradColor = gradMatch ? gradMatch[0] : '#667eea';
+        item.innerHTML = `<span class="boards-sidebar-item-dot" style="background:${gradColor}"></span>${esc(project.name || 'Sans titre')}`;
+        
+        // Appliquer le gradient si c'est le premier (actif)
+        if (idx === 0) {
+          item.style.background = grad;
+          item.style.color = '#fff';
+        }
+        
+        // Ajouter le gradient au hover
+        item.addEventListener('mouseenter', function() {
+          if (!this.classList.contains('active')) {
+            this.style.background = grad;
+            this.style.color = '#fff';
+            this.style.opacity = '0.8';
           }
         });
-
-        // Date de modification
-        const dateTxt = project.updatedAt
-          ? new Date(project.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-          : '---';
-
-        // Création de l'élément
-        const card = document.createElement('div');
-        card.className = 'board-card';
-        // Style forcé pour éviter le fond noir si le CSS saute
-        card.style.background = 'var(--bg2)';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.minHeight = '160px';
-
-        card.innerHTML = `
-      <div class="board-card-actions" style="position:absolute; top:12px; right:12px;">
-        <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
-      </div>
-      <div class="board-card-name" style="color:var(--text); font-weight:600; margin-bottom:8px;">${esc(project.name || "Sans titre")}</div>
-      <div class="board-card-desc" style="color:var(--text2); font-size:13px; flex-grow:1;">${esc(project.description || "")}</div>
-      
-      <div class="board-card-footer" style="margin-top:auto; padding-top:12px; border-top:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-          <span style="color:var(--text2)"><b style="color:var(--accent)">${nbOnglets}</b> onglet${nbOnglets > 1 ? 's' : ''} · <b style="color:var(--accent)">${nbListes}</b> listes</span>
-          <span style="color:var(--text2)"><b style="color:var(--accent)">${finies}/${totalTaches}</b> tâches</span>
-        </div>
-        <div style="font-size:10px; color:var(--text3); text-align:right; font-style:italic;">
-          Modifié le ${dateTxt}
-        </div>
-      </div>
-    `;
-
-        card.onclick = (e) => {
-          if (!e.target.closest('.board-card-actions')) openBoard(project.id);
+        
+        item.addEventListener('mouseleave', function() {
+          if (!this.classList.contains('active')) {
+            this.style.background = '';
+            this.style.color = '';
+            this.style.opacity = '';
+          }
+        });
+        
+        item.onclick = (e) => {
+          // Enlever l'active de tous les items
+          document.querySelectorAll('.boards-sidebar-item').forEach(i => {
+            i.classList.remove('active');
+            i.style.background = '';
+            i.style.color = '';
+            i.style.opacity = '';
+          });
+          // Ajouter au nouvel élément
+          item.classList.add('active');
+          item.style.background = grad;
+          item.style.color = '#fff';
+          item.style.opacity = '1';
+          renderMainPanel(project, idx);
         };
-        grid.appendChild(card);
+        sidebar.appendChild(item);
       });
+
+      // Afficher le premier projet par défaut
+      if (boardsList.length > 0) {
+        renderMainPanel(boardsList[0], 0);
+      }
+    }
+
+    function renderMainPanel(project, idx) {
+      const main = document.getElementById('boardsMain');
+      if (!main) return;
+
+      const kanbanData = project.kanban || {};
+      const allCols = kanbanData.tabs
+        ? kanbanData.tabs.flatMap(t => t.columns || [])
+        : (kanbanData.columns || []);
+      const nbListes = allCols.length;
+      const nbOnglets = kanbanData.tabs ? kanbanData.tabs.length : 1;
+
+      let totalTaches = 0;
+      let finies = 0;
+
+      allCols.forEach(col => {
+        const cards = col.cards || [];
+        totalTaches += cards.length;
+        const titleLower = (col.title || '').toLowerCase();
+        if (titleLower.includes('fini') || titleLower.includes('terminé') || titleLower.includes('done')) {
+          finies += cards.length;
+        }
+      });
+
+      const grad = TAB_GRADIENTS[idx % TAB_GRADIENTS.length];
+      
+      // Formater la date et heure
+      let lastOpenedTxt = 'Jamais ouvert';
+      if (project.lastOpened) {
+        let date;
+        // Gérer les deux formats : Timestamp Firebase ou Date
+        if (project.lastOpened.toDate) {
+          // Firebase Timestamp
+          date = project.lastOpened.toDate();
+        } else if (project.lastOpened instanceof Date) {
+          date = project.lastOpened;
+        } else {
+          // String ou nombre
+          date = new Date(project.lastOpened);
+        }
+        
+        // Vérifier que la date est valide
+        if (!isNaN(date.getTime())) {
+          const today = new Date();
+          const isToday = date.toDateString() === today.toDateString();
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const isYesterday = date.toDateString() === yesterday.toDateString();
+          
+          if (isToday) {
+            lastOpenedTxt = 'Aujourd\'hui à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          } else if (isYesterday) {
+            lastOpenedTxt = 'Hier à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          } else {
+            lastOpenedTxt = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+          }
+        }
+      }
+
+      main.innerHTML = `
+        <div class="boards-main-header">
+          <div class="boards-main-info">
+            <div class="boards-main-icon" style="background:${grad}"></div>
+            <div>
+              <div class="boards-main-title">${esc(project.name || 'Sans titre')}</div>
+              <div class="boards-main-meta">
+                <span class="boards-main-meta-item">${nbOnglets} onglet${nbOnglets > 1 ? 's' : ''}</span>
+                <span class="boards-main-meta-item">${nbListes} liste${nbListes > 1 ? 's' : ''}</span>
+                <span class="boards-main-meta-item">${lastOpenedTxt}</span>
+              </div>
+              ${project.description ? `<div class="boards-main-desc">${esc(project.description.substring(0, 60))}${project.description.length > 60 ? '...' : ''}</div>` : ''}
+            </div>
+          </div>
+          <button class="board-opt-btn" onclick="openBoardCtx(event, '${project.id}')">···</button>
+        </div>
+
+        <div class="boards-main-stats">
+          <div class="boards-main-stat">
+            <div class="boards-main-stat-label">Tâches</div>
+            <div class="boards-main-stat-value">${totalTaches}</div>
+          </div>
+          <div class="boards-main-stat">
+            <div class="boards-main-stat-label">Terminées</div>
+            <div class="boards-main-stat-value">${finies}</div>
+          </div>
+          <div class="boards-main-stat">
+            <div class="boards-main-stat-label">Progression</div>
+            <div class="boards-main-stat-value">${totalTaches > 0 ? Math.round((finies / totalTaches) * 100) : 0}%</div>
+          </div>
+          <div class="boards-main-stat">
+            <div class="boards-main-stat-label">Restantes</div>
+            <div class="boards-main-stat-value">${totalTaches - finies}</div>
+          </div>
+        </div>
+      `;
+
+      // Ajouter le listener pour ouvrir le projet
+      main.style.cursor = 'pointer';
+      main.onclick = () => openBoard(project.id);
     }
     // Menu contextuel pour les cartes de l'accueil
     function openBoardCtx(e, boardId) {
@@ -2839,6 +3116,9 @@
           state = data.kanban || getDefaultState();
           state = migrateState(state);
           state.boardName = data.name || state.boardName;
+          
+          // Enregistrer la date/heure d'ouverture avec le timestamp serveur Firebase
+          docRef.update({ lastOpened: firebase.firestore.FieldValue.serverTimestamp() }).catch(e => console.error("Erreur lastOpened:", e));
         } else {
           state = getDefaultState();
         }
@@ -3180,8 +3460,6 @@ function renderTabBar() {
       state.activeTab = state.tabs.length - 1;
       render();
       saveStateToFirebase();
-      // Immediately open rename
-      setTimeout(() => openTabRename(state.activeTab), 120);
     }
 
     // ── Tab context menu ──
